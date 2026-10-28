@@ -8,6 +8,17 @@ Ce dossier contient le modèle de données PostgreSQL de Liena, ses migrations P
 - PostgreSQL 14+ avec l'extension `btree_gist` disponible
 - Prisma ORM 7.9.0
 
+## Installation locale
+
+```powershell
+cd "C:\Stage project\Liena"
+npm install
+Copy-Item .env.example .env
+```
+
+Le fichier `.env.example` utilise uniquement des valeurs locales de développement. Ne réutilisez pas ces identifiants en production.
+
+Créer les bases `liena_dev` et `liena_test` dans PostgreSQL, puis adapter `DATABASE_URL` et `TEST_DATABASE_URL` dans `.env`. Le nom de la base de test doit contenir `test`; le script refuse également d'utiliser la même base que `DATABASE_URL`.
 
 
 ## Commandes
@@ -38,4 +49,4 @@ Voir :
 - [Règles métier](./docs/business-rules.md)
 - [Validation et migrations](./docs/database-validation.md)
 
-Les contrôles d'accès aux ressources, la vérification cryptographique des webhooks et les contrôles de propriété doivent être implémentés dans l'API lorsqu'elle existera. Les contraintes SQL renforcent l'intégrité, mais ne remplacent pas ces contrôles.
+Les contrôles d'accès aux ressources et les contrôles de propriété doivent être implémentés dans l'API lorsqu'elle existera. Les contraintes SQL renforcent l'intégrité, mais ne remplacent pas ces contrôles.

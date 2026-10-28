@@ -5,9 +5,6 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import {
   BookingStatus,
   MessageType,
-  PaymentMethod,
-  PaymentOperationType,
-  PaymentStatus,
   Prisma,
   PrismaClient,
   ProviderStatus,
@@ -144,7 +141,7 @@ after(async () => {
   await pool.end();
 });
 
-test("supports the full booking, payment, completion, and review flow", async () => {
+test("supports the booking, completion, and review flow", async () => {
   await withRollback(async (transaction) => {
     const fixture = await createFixture(transaction);
     const booking = await createBooking(transaction, fixture);
@@ -160,28 +157,6 @@ test("supports the full booking, payment, completion, and review flow", async ()
     await transaction.booking.update({
       where: { id: booking.id },
       data: { status: BookingStatus.IN_PROGRESS, startedAt: new Date() },
-    });
-
-    const payment = await transaction.payment.create({
-      data: {
-        bookingId: booking.id,
-        amount: "12000.00",
-        method: PaymentMethod.MOBILE_MONEY,
-        idempotencyKey: `payment-${fixture.suffix}`,
-      },
-    });
-    await transaction.payment.update({
-      where: { id: payment.id },
-      data: { status: PaymentStatus.SUCCEEDED, paidAt: new Date() },
-    });
-    await transaction.paymentOperation.create({
-      data: {
-        paymentId: payment.id,
-        type: PaymentOperationType.CAPTURE,
-        status: "SUCCEEDED",
-        amount: "12000.00",
-        idempotencyKey: `capture-${fixture.suffix}`,
-      },
     });
 
     await transaction.booking.update({
@@ -449,7 +424,7 @@ test("serializes simultaneous confirmations of an overlapping slot", async () =>
   }
 });
 
-test("prevents non-participants from sending messages and de-duplicates payment events", async () => {
+test("prevents non-participants from sending messages", async () => {
   await assertConstraintFailure(
     withRollback(async (transaction) => {
       const fixture = await createFixture(transaction);
@@ -481,30 +456,6 @@ test("prevents non-participants from sending messages and de-duplicates payment 
     }),
     "messages_conversation_id_sender_id_fkey",
   );
-
-  await assertConstraintFailure(
-    withRollback(async (transaction) => {
-      const fixture = await createFixture(transaction);
-      const booking = await createBooking(transaction, fixture);
-      const payment = await transaction.payment.create({
-        data: {
-          bookingId: booking.id,
-          amount: "12000.00",
-          method: PaymentMethod.CARD,
-          idempotencyKey: `payment-${fixture.suffix}`,
-        },
-      });
-      const event = {
-        providerName: "test-gateway",
-        providerEventId: `event-${fixture.suffix}`,
-        payloadHash: "a".repeat(64),
-        paymentId: payment.id,
-      };
-      await transaction.paymentWebhookEvent.create({ data: event });
-      await transaction.paymentWebhookEvent.create({ data: event });
-    }),
-    "payment_webhook_events_provider_name_provider_event_id_key",
-  );
 });
 
 test("keeps the seeded category catalog idempotent", async () => {
@@ -525,4 +476,36 @@ test("keeps the seeded category catalog idempotent", async () => {
     },
   });
   assert.equal(categories.length, 8);
+});
+
+test("removes payment tables and enum values from the migrated schema", async () => {
+  const tables = await pool.query<{ tableName: string | null }>(`
+    SELECT to_regclass('public.payments') AS "tableName"
+    UNION ALL SELECT to_regclass('public.payment_operations')
+    UNION ALL SELECT to_regclass('public.payment_webhook_events')
+  `);
+  assert.deepEqual(tables.rows.map((row) => row.tableName), [null, null, null]);
+
+  const paymentTypes = await pool.query<{ typeName: string }>(`
+    SELECT typname AS "typeName"
+    FROM pg_type
+    WHERE typname IN (
+      'payment_status',
+      'payment_method',
+      'payment_operation_type',
+      'payment_operation_status'
+    )
+  `);
+  assert.deepEqual(paymentTypes.rows, []);
+
+  const notificationValues = await pool.query<{ label: string }>(`
+    SELECT enumlabel AS label
+    FROM pg_enum
+    JOIN pg_type ON pg_type.oid = pg_enum.enumtypid
+    WHERE pg_type.typname = 'notification_type'
+  `);
+  assert.deepEqual(
+    notificationValues.rows.map((row) => row.label),
+    ["BOOKING", "MESSAGE", "REVIEW", "SYSTEM", "REMINDER"],
+  );
 });

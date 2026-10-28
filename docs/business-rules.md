@@ -27,15 +27,11 @@ Le passage en `ACCEPTED` (et les états actifs suivants) exige un intervalle com
 
 La contrainte d'exclusion sur le prestataire et la plage de temps arbitre la concurrence, même si deux transactions vérifient simultanément un créneau. Les demandes `PENDING`, rejetées et annulées ne bloquent pas le planning. La disponibilité hebdomadaire et les exceptions sont des règles complémentaires à vérifier transactionnellement par l'API.
 
-## Prix et paiements
+## Prix des prestations
 
 - `FIXED`, `HOURLY` et `DAILY` ont un prix décimal non négatif; `QUOTE` n'a pas de prix initial.
-- Chaque prestation, réservation, paiement et opération conserve une devise. XOF est une valeur par défaut MVP, pas une hypothèse universelle.
-- Le succès d'un paiement ne fait pas évoluer la réservation. Le statut de prestation suit son propre cycle.
-- Les montants ne sont validés que par le serveur. Le retour navigateur ne prouve pas le paiement.
-- Le serveur vérifie la signature de webhook, insère/déduplique l'événement par `(providerName, providerEventId)`, puis applique la transition du paiement dans une transaction idempotente.
-- Les opérations autorisation/capture/remboursement ont leurs propres clés d'idempotence et références fournisseur. Plusieurs opérations `REFUND` permettent les remboursements partiels; le cumul ne peut dépasser le montant encaissé et doit être vérifié par l'application ou un trigger complémentaire avant la mise en production des remboursements.
-- Les événements de webhook sont enregistrés avec leur hash et leur état de traitement, sans secret ni payload brut.
+- Chaque prestation et réservation conserve une devise. XOF est une valeur par défaut MVP, pas une hypothèse universelle.
+- Le prix convenu est enregistré dans la réservation lorsqu'elle est acceptée et n'est pas recalculé depuis le service.
 
 ## Avis, favoris et messagerie
 

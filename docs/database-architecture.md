@@ -6,7 +6,7 @@ Le dossier Liena ne contenait ni backend, ni modèle de données, ni version Pri
 
 Hypothèses MVP explicites :
 
-- XOF et le fuseau `Africa/Lome` sont les valeurs par défaut; la devise est conservée sur chaque offre, réservation, paiement et opération.
+- XOF et le fuseau `Africa/Lome` sont les valeurs par défaut; la devise est conservée sur les offres et les réservations.
 - Les données de localisation par défaut sont orientées Togo (`TG`), mais `countryCode` demeure configurable. Les heures de disponibilité sont des heures locales du profil; les instants de réservation sont des `timestamptz` et doivent être transmis en UTC.
 - Un compte peut cumuler les rôles client, prestataire et administrateur. Les rôles, l'état du compte et la vérification professionnelle sont des dimensions distinctes.
 - Un profil ne conserve pas de note moyenne ni de compteur d'avis dérivés; ces valeurs se calculent à partir des avis publiés.
@@ -20,7 +20,6 @@ Hypothèses MVP explicites :
 - Une conversation est associée à un client et à un profil prestataire. `ConversationParticipant` autorise les membres; la clé étrangère composite de `Message` exige que son expéditeur soit membre de la conversation. La lecture des conversations reste à protéger côté serveur.
 - `Review(bookingId, authorId, providerProfileId)` référence la réservation par clé étrangère composite. L'unicité sur cette clé permet au plus un avis pour la réservation; un trigger exige que la réservation soit terminée.
 - Les signalements utilisent une colonne FK distincte par type de cible et un `CHECK` impose la correspondance avec `targetType`. Contrairement à un identifiant polymorphe seul, chaque cible possède ainsi une vraie FK.
-- Un paiement représente l'intention et son état courant; `PaymentOperation` conserve les captures, remboursements et autres opérations avec des clés d'idempotence propres. `PaymentWebhookEvent` déduplique les événements par fournisseur et identifiant.
 
 ## Intégrité et concurrence
 
@@ -34,7 +33,6 @@ Le fuseau IANA du profil permet de convertir les règles hebdomadaires locales v
 
 - Services : index catégorie/statut, prestataire/statut, localisation/statut et statut/date pour le catalogue et les écrans de profil.
 - Réservations : client/statut/date et prestataire/statut/date pour les tableaux de bord; statut/heure et service/heure pour les consultations temporelles.
-- Paiements : réservation/statut et statut/date pour le rapprochement.
 - Notifications : destinataire, date de lecture, création pour la boîte de réception non lue.
 - Messages : conversation/date pour l'historique; la clé composite de participation filtre les expéditeurs autorisés.
 - Avis : prestataire/statut/date pour les avis visibles.
@@ -46,8 +44,8 @@ Les index spatiaux, trigrammes et recherche plein texte ne sont pas ajoutés au 
 
 - Les comptes sont désactivés/supprimés logiquement avec `status` et `deletedAt`; le `CHECK` exige leur cohérence. L'email et le téléphone sont uniques, y compris pour un compte supprimé; l'anonymisation devra remplacer les coordonnées selon la politique légale avant de libérer ces valeurs.
 - Les services, profils et réservations liés à des données commerciales sont protégés par `RESTRICT`; les favoris, images et notifications non historiques peuvent suivre leur propriétaire via `CASCADE`.
-- Les instantanés de réservation, l'historique de statuts, les opérations de paiement et les journaux d'audit ne doivent pas être effacés en cascade avec une modification de profil.
-- Les journaux d'audit ne doivent contenir ni mot de passe, ni jeton, ni signature de paiement, ni corps brut d'un webhook.
+- Les instantanés de réservation, l'historique de statuts et les journaux d'audit ne doivent pas être effacés en cascade avec une modification de profil.
+- Les journaux d'audit ne doivent contenir ni mot de passe, ni jeton, ni secret.
 
 ## Sécurité applicative et limites
 

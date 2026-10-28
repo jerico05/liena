@@ -62,47 +62,8 @@ enum BookingStatus {
   @@map("booking_status")
 }
 
-enum PaymentStatus {
-  PENDING
-  PROCESSING
-  SUCCEEDED
-  FAILED
-  PARTIALLY_REFUNDED
-  REFUNDED
-
-  @@map("payment_status")
-}
-
-enum PaymentMethod {
-  CASH
-  MOBILE_MONEY
-  CARD
-  BANK_TRANSFER
-
-  @@map("payment_method")
-}
-
-enum PaymentOperationType {
-  AUTHORIZE
-  CAPTURE
-  REFUND
-  VOID
-  FAILURE
-
-  @@map("payment_operation_type")
-}
-
-enum PaymentOperationStatus {
-  PENDING
-  SUCCEEDED
-  FAILED
-
-  @@map("payment_operation_status")
-}
-
 enum NotificationType {
   BOOKING
-  PAYMENT
   MESSAGE
   REVIEW
   SYSTEM
@@ -379,7 +340,6 @@ model Booking {
   service         Service                @relation(fields: [serviceId, providerProfileId], references: [id, providerProfileId], onDelete: Restrict)
   address         Address?               @relation(fields: [addressId], references: [id], onDelete: SetNull)
   statusHistory   BookingStatusHistory[]
-  payments        Payment[]
   review          Review?
   conversation    Conversation?
 
@@ -475,69 +435,6 @@ model MessageAttachment {
 
   @@index([messageId])
   @@map("message_attachments")
-}
-
-model Payment {
-  id                String        @id @default(uuid()) @db.Uuid
-  bookingId         String        @map("booking_id") @db.Uuid
-  amount            Decimal       @db.Decimal(12, 2)
-  currency          String        @default("XOF") @db.Char(3)
-  method            PaymentMethod
-  status            PaymentStatus @default(PENDING)
-  providerName      String?       @map("provider_name")
-  providerReference String?       @unique @map("provider_reference")
-  idempotencyKey    String        @unique @map("idempotency_key")
-  paidAt            DateTime?     @map("paid_at") @db.Timestamptz(3)
-  failureReason     String?       @map("failure_reason") @db.Text
-  metadata          Json?
-  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  booking       Booking               @relation(fields: [bookingId], references: [id], onDelete: Restrict)
-  operations    PaymentOperation[]
-  webhookEvents PaymentWebhookEvent[]
-
-  @@index([bookingId, status])
-  @@index([status, createdAt])
-  @@map("payments")
-}
-
-model PaymentOperation {
-  id                String                 @id @default(uuid()) @db.Uuid
-  paymentId         String                 @map("payment_id") @db.Uuid
-  type              PaymentOperationType
-  status            PaymentOperationStatus @default(PENDING)
-  amount            Decimal                @db.Decimal(12, 2)
-  currency          String                 @default("XOF") @db.Char(3)
-  idempotencyKey    String                 @unique @map("idempotency_key")
-  providerReference String?                @unique @map("provider_reference")
-  failureReason     String?                @map("failure_reason") @db.Text
-  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
-
-  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-
-  @@index([paymentId, type, status])
-  @@map("payment_operations")
-}
-
-model PaymentWebhookEvent {
-  id                  String    @id @default(uuid()) @db.Uuid
-  providerName        String    @map("provider_name")
-  providerEventId     String    @map("provider_event_id")
-  payloadHash         String    @map("payload_hash") @db.Char(64)
-  paymentId           String?   @map("payment_id") @db.Uuid
-  signatureVerifiedAt DateTime? @map("signature_verified_at") @db.Timestamptz(3)
-  receivedAt          DateTime  @default(now()) @map("received_at") @db.Timestamptz(3)
-  processedAt         DateTime? @map("processed_at") @db.Timestamptz(3)
-  processingError     String?   @map("processing_error") @db.Text
-
-  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-
-  @@unique([providerName, providerEventId])
-  @@index([paymentId, receivedAt])
-  @@index([processedAt, receivedAt])
-  @@map("payment_webhook_events")
 }
 
 model Review {
