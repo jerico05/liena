@@ -598,7 +598,7 @@ function AdminManagement({
       {error && <p className="form-message form-error grid-full" role="alert">{error}</p>}
       {message && <p className="form-message form-success grid-full" role="status">{message}</p>}
       <section className="dashboard-card invite-card">
-        <div className="section-heading"><div><span className="eyebrow">ACCÈS SÉCURISÉ</span><h2>Inviter un administrateur</h2></div><span className="section-icon" aria-hidden="true">＋</span></div>
+        <div className="section-heading"><div><span className="eyebrow">ACCÈS SÉCURISÉ </span><h2>Inviter un administrateur</h2></div><span className="section-icon" aria-hidden="true">＋</span></div>
         <p>Une invitation à usage unique sera envoyée par e-mail. Elle expire après 48 heures.</p>
         <form className="invite-form" onSubmit={invite}>
           <div className="field"><label htmlFor="invite-email">Adresse e-mail</label><input id="invite-email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nom@entreprise.fr" /></div>
