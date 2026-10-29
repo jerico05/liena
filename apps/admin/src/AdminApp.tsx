@@ -332,7 +332,7 @@ function InvitationSetup({
         <form className="auth-form" onSubmit={submit}>
           <div className="field"><label htmlFor="first-name">Prénom</label><input id="first-name" autoComplete="given-name" required maxLength={100} value={firstName} onChange={(event) => setFirstName(event.target.value)} /></div>
           <div className="field"><label htmlFor="last-name">Nom</label><input id="last-name" autoComplete="family-name" required maxLength={100} value={lastName} onChange={(event) => setLastName(event.target.value)} /></div>
-          <div className="field"><label htmlFor="setup-password">Mot de passe <span className="hint">(12 caractères minimum)</span></label><input id="setup-password" type="password" autoComplete="new-password" minLength={12} maxLength={128} required value={password} onChange={(event) => setPassword(event.target.value)} /></div>
+          <div className="field"><label htmlFor="setup-password">Mot de passe<span className="hint">(12 caractères minimum)</span></label><input id="setup-password" type="password" autoComplete="new-password" minLength={12} maxLength={128} required value={password} onChange={(event) => setPassword(event.target.value)} /></div>
           <div className="field"><label htmlFor="confirm-password">Confirmer le mot de passe</label><input id="confirm-password" type="password" autoComplete="new-password" minLength={12} maxLength={128} required value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></div>
           {error && <p className="form-message form-error" role="alert">{error}</p>}
           {message && <p className="form-message form-success" role="status">{message}</p>}
