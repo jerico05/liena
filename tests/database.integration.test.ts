@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { after, test } from "node:test";
+import { once } from "node:events";
+import type { Server } from "node:http";
+import type { AddressInfo } from "node:net";
+import { after, before, test } from "node:test";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
   BookingStatus,
@@ -12,6 +15,13 @@ import {
   UserRole,
 } from "@prisma/client";
 import { Pool } from "pg";
+import { app } from "../src/app";
+import { disconnectDatabase } from "../src/lib/prisma";
+import {
+  createOpaqueToken,
+  hashToken,
+  sessionCookieName,
+} from "../src/modules/admin-auth/security";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 if (!testDatabaseUrl) {
@@ -21,6 +31,16 @@ if (!testDatabaseUrl) {
 const pool = new Pool({ connectionString: testDatabaseUrl });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 const rollbackSignal = Symbol("rollback test transaction");
+let server: Server;
+let baseUrl: string;
+
+before(async () => {
+  server = app.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  baseUrl = `http://127.0.0.1:${(address as AddressInfo).port}`;
+});
 
 async function withRollback(
   callback: (transaction: Prisma.TransactionClient) => Promise<void>,
@@ -105,6 +125,111 @@ async function createFixture(transaction: Prisma.TransactionClient) {
   return { client, providerUser, providerProfile, category, service, suffix };
 }
 
+type ProviderRegistrationSeed = {
+  status: ProviderStatus;
+  firstName: string;
+  lastName: string;
+  email: string;
+  businessName: string;
+  description: string;
+  city: string;
+  neighborhood: string;
+  createdAt: Date;
+};
+
+async function withAdminAndProviderRegistrations<T>(
+  seeds: ProviderRegistrationSeed[],
+  callback: (fixture: {
+    cookie: string;
+    registrations: Array<{
+      id: string;
+      userId: string;
+      seed: ProviderRegistrationSeed;
+    }>;
+  }) => Promise<T>,
+): Promise<T> {
+  const userIds: string[] = [];
+  const profileIds: string[] = [];
+  let adminSessionId: string | undefined;
+
+  try {
+    const admin = await prisma.user.create({
+      data: {
+        firstName: "Integration",
+        lastName: "Admin",
+        email: `provider-review-admin-${randomUUID()}@example.test`,
+        passwordHash: "integration-test-password-hash",
+        roles: [UserRole.ADMIN],
+      },
+    });
+    userIds.push(admin.id);
+
+    const sessionToken = createOpaqueToken();
+    const session = await prisma.adminSession.create({
+      data: {
+        userId: admin.id,
+        tokenHash: hashToken(sessionToken),
+        csrfTokenHash: hashToken(createOpaqueToken()),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+    adminSessionId = session.id;
+
+    const registrations = [];
+    for (const seed of seeds) {
+      const user = await prisma.user.create({
+        data: {
+          firstName: seed.firstName,
+          lastName: seed.lastName,
+          email: seed.email,
+          passwordHash: "integration-test-password-hash",
+          roles: [UserRole.PROVIDER],
+        },
+      });
+      userIds.push(user.id);
+
+      const profile = await prisma.providerProfile.create({
+        data: {
+          userId: user.id,
+          businessName: seed.businessName,
+          slug: `provider-${randomUUID()}`,
+          description: seed.description,
+          status: seed.status,
+          verifiedAt: seed.status === ProviderStatus.VERIFIED ? seed.createdAt : null,
+          city: seed.city,
+          neighborhood: seed.neighborhood,
+          createdAt: seed.createdAt,
+        },
+      });
+      profileIds.push(profile.id);
+      registrations.push({ id: profile.id, userId: user.id, seed });
+    }
+
+    return await callback({
+      cookie: `${sessionCookieName}=${encodeURIComponent(sessionToken)}`,
+      registrations,
+    });
+  } finally {
+    if (profileIds.length || userIds.length || adminSessionId) {
+      await prisma.$transaction(async (transaction) => {
+        if (profileIds.length) {
+          await transaction.providerProfile.deleteMany({
+            where: { id: { in: profileIds } },
+          });
+        }
+        if (adminSessionId) {
+          await transaction.adminSession.deleteMany({
+            where: { id: adminSessionId },
+          });
+        }
+        if (userIds.length) {
+          await transaction.user.deleteMany({ where: { id: { in: userIds } } });
+        }
+      });
+    }
+  }
+}
+
 async function createBooking(
   transaction: Prisma.TransactionClient,
   fixture: Awaited<ReturnType<typeof createFixture>>,
@@ -137,8 +262,112 @@ async function createBooking(
 }
 
 after(async () => {
+  if (server?.listening) {
+    server.close();
+    await once(server, "close");
+  }
+  await disconnectDatabase();
   await prisma.$disconnect();
   await pool.end();
+});
+
+test("lists pending provider registrations for an authenticated admin", async () => {
+  const olderPending = {
+    status: ProviderStatus.PENDING,
+    firstName: "Awa",
+    lastName: "Mensah",
+    email: `awa-${randomUUID()}@example.test`,
+    businessName: "Awa Services",
+    description: "Older pending registration.",
+    city: "Lomé",
+    neighborhood: "Tokoin",
+    createdAt: new Date("2026-01-10T09:00:00.000Z"),
+  } satisfies ProviderRegistrationSeed;
+  const newerPending = {
+    ...olderPending,
+    firstName: "Kossi",
+    lastName: "Adja",
+    email: `kossi-${randomUUID()}@example.test`,
+    businessName: "Kossi Repairs",
+    createdAt: new Date("2026-01-12T09:00:00.000Z"),
+  } satisfies ProviderRegistrationSeed;
+
+  await withAdminAndProviderRegistrations(
+    [
+      olderPending,
+      newerPending,
+      {
+        ...olderPending,
+        status: ProviderStatus.VERIFIED,
+        email: `verified-${randomUUID()}@example.test`,
+        createdAt: new Date("2026-01-11T09:00:00.000Z"),
+      },
+      {
+        ...olderPending,
+        status: ProviderStatus.REJECTED,
+        email: `rejected-${randomUUID()}@example.test`,
+        createdAt: new Date("2026-01-13T09:00:00.000Z"),
+      },
+    ],
+    async ({ cookie, registrations }) => {
+      const response = await fetch(`${baseUrl}/api/v1/admin/provider-registrations`, {
+        headers: { cookie },
+      });
+      const body = await response.json();
+
+      assert.equal(response.status, 200);
+      assert.deepEqual(body.data.map((item: { id: string }) => item.id), [
+        registrations[0].id,
+        registrations[1].id,
+      ]);
+
+      const registration = body.data[0];
+      const expectedProfileKeys = [
+        "businessName",
+        "city",
+        "countryCode",
+        "createdAt",
+        "description",
+        "id",
+        "neighborhood",
+        "status",
+        "user",
+      ];
+      assert.deepEqual(Object.keys(registration).sort(), expectedProfileKeys.sort());
+      assert.equal(registration.businessName, olderPending.businessName);
+      assert.equal(registration.description, olderPending.description);
+      assert.equal(registration.status, ProviderStatus.PENDING);
+      assert.equal(registration.countryCode, "TG");
+      assert.equal(registration.city, olderPending.city);
+      assert.equal(registration.neighborhood, olderPending.neighborhood);
+      assert.equal(registration.createdAt, olderPending.createdAt.toISOString());
+      assert.deepEqual(Object.keys(registration.user).sort(), [
+        "email",
+        "firstName",
+        "id",
+        "lastName",
+        "phone",
+      ]);
+      assert.equal(registration.user.id, registrations[0].userId);
+      assert.equal(registration.user.firstName, olderPending.firstName);
+      assert.equal(registration.user.lastName, olderPending.lastName);
+      assert.equal(registration.user.email, olderPending.email);
+      assert.equal(registration.user.phone, null);
+      assert.doesNotMatch(JSON.stringify(body), /passwordHash/i);
+    },
+  );
+});
+
+test("returns an empty list when no provider registrations are pending", async () => {
+  await withAdminAndProviderRegistrations([], async ({ cookie }) => {
+    const response = await fetch(`${baseUrl}/api/v1/admin/provider-registrations`, {
+      headers: { cookie },
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(body, { data: [] });
+  });
 });
 
 test("supports the booking, completion, and review flow", async () => {

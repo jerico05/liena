@@ -111,6 +111,14 @@ test("issues an anti-CSRF token for the admin browser client", async () => {
   assert.doesNotMatch(cookies, /HttpOnly/i);
 });
 
+test("requires admin authentication to list pending provider registrations", async () => {
+  const response = await fetch(`${baseUrl}/api/v1/admin/provider-registrations`);
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(body.error.code, "AUTHENTICATION_REQUIRED");
+});
+
 test("rejects state-changing admin requests without the trusted origin", async () => {
   const response = await fetch(`${baseUrl}/api/v1/admin/login`, {
     method: "POST",
