@@ -21,6 +21,11 @@ type Invitation = {
   createdAt: string;
 };
 
+type InvitationsResponse = {
+  data: Invitation[];
+  emailProviderConfigured: boolean;
+};
+
 type ApiErrorBody = {
   error?: { message?: string };
 };
@@ -190,9 +195,7 @@ function AuthLayout({
 }) {
   return (
     <main className="page-shell">
-      <div className="ambient ambient-blue" aria-hidden="true" />
-      <div className="ambient ambient-teal" aria-hidden="true" />
-      <div className="security-indicator"><span />Accès sécurisé</div>
+      <div className="security-indicator" aria-label="Accès sécurisé"><span /></div>
       <section className="auth-card">{children}</section>
       {footer && <footer className="page-footer">© 2026 Liena · Respect de la confidentialité et des données.</footer>}
     </main>
@@ -252,7 +255,10 @@ function LoginPage({
         <div className="field">
           <label htmlFor="login-email"><span>Adresse e-mail</span><span className="required-note">Requis</span></label>
           <div className="input-wrap">
-            <span className="field-icon" aria-hidden="true">✉</span>
+            <svg className="field-icon" aria-hidden="true" viewBox="0 0 20 20" fill="none">
+              <rect x="2.5" y="4" width="15" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+              <path d="m3.5 5 6.5 5 6.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             <input id="login-email" type="email" autoComplete="username" required maxLength={254}
               placeholder="ex. admin@liena.fr" value={email} onChange={(event) => setEmail(event.target.value)} />
           </div>
@@ -263,11 +269,20 @@ function LoginPage({
             <button type="button" className="text-button" onClick={() => onNavigate("/forgot-password")}>Mot de passe oublié ?</button>
           </div>
           <div className="input-wrap">
-            <span className="field-icon" aria-hidden="true">⌑</span>
+            <svg className="field-icon" aria-hidden="true" viewBox="0 0 20 20" fill="none">
+              <rect x="4" y="8.5" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M6.5 8.5V6a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="10" cy="12.5" r="1" fill="currentColor" />
+            </svg>
             <input id="login-password" type={showPassword ? "text" : "password"} autoComplete="current-password"
               required value={password} onChange={(event) => setPassword(event.target.value)} />
             <button type="button" className="password-toggle" aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-              aria-pressed={showPassword} onClick={() => setShowPassword((value) => !value)}>{showPassword ? "Masquer" : "Voir"}</button>
+              aria-pressed={showPassword} onClick={() => setShowPassword((value) => !value)}>
+              <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                <path d="M2 10s2.8-5 8-5 8 5 8 5-2.8 5-8 5-8-5-8-5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                <circle cx="10" cy="10" r="2.25" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+            </button>
           </div>
         </div>
         <label className="remember-option">
@@ -280,7 +295,10 @@ function LoginPage({
         </button>
       </form>
       <div className="card-security" aria-label="Connexion protégée">
-        <span aria-hidden="true">⛨</span>
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+          <path d="M10 2.5 16 5v4.4c0 3.8-2.5 6.4-6 8.1-3.5-1.7-6-4.3-6-8.1V5l6-2.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="m7.5 9.8 1.7 1.7 3.5-3.7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </div>
     </AuthLayout>
   );
@@ -468,16 +486,21 @@ function AdminDashboard({
   return (
     <main className="dashboard-shell">
       <header className="dashboard-header">
-        <Brand compact />
+        <div className="dashboard-brand">
+          <Brand compact />
+          <span className="dashboard-brand-divider" />
+          <span className="dashboard-brand-label">Console <strong>Administration</strong></span>
+        </div>
         <div className="dashboard-user">
+          <span className="dashboard-avatar" aria-hidden="true">{admin.firstName.slice(0, 1)}{admin.lastName.slice(0, 1)}</span>
           <div><strong>{admin.firstName} {admin.lastName}</strong><span>{isSuperAdmin(admin) ? "Super administrateur" : "Administrateur"}</span></div>
           <button className="secondary-button" onClick={() => setConfirmLogout(true)}>Déconnexion</button>
         </div>
       </header>
       <section className="dashboard-content">
         <div className="dashboard-title">
-          <div><span className="eyebrow">ESPACE ADMINISTRATION</span><h1>Bienvenue, {admin.firstName}</h1><p>Votre console de gestion Liena.</p></div>
-          <span className="status-pill"><span />Session protégée</span>
+          <div><span className="eyebrow">ESPACE ADMINISTRATION <span className="eyebrow-divider">/</span> VUE D’ENSEMBLE</span><h1>Bonjour, {admin.firstName}</h1><p>Gérez les accès administrateurs de votre plateforme.</p></div>
+          <span className="status-pill"><span />Session sécurisée</span>
         </div>
         {logoutError && <p className="form-message form-error" role="alert">{logoutError}</p>}
         {isSuperAdmin(admin) ? (
@@ -512,6 +535,8 @@ function AdminManagement({
 }) {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [emailProviderConfigured, setEmailProviderConfigured] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"ADMIN" | "SUPER_ADMIN">("ADMIN");
   const [error, setError] = useState("");
@@ -520,12 +545,17 @@ function AdminManagement({
   const [removing, setRemoving] = useState<AdminUser | null>(null);
 
   const reload = useCallback(async () => {
-    const [adminResult, invitationResult] = await Promise.all([
-      apiRequest<{ data: AdminUser[] }>("/admins"),
-      apiRequest<{ data: Invitation[] }>("/invitations"),
-    ]);
-    setAdmins(adminResult.data);
-    setInvitations(invitationResult.data);
+    try {
+      const [adminResult, invitationResult] = await Promise.all([
+        apiRequest<{ data: AdminUser[] }>("/admins"),
+        apiRequest<InvitationsResponse>("/invitations"),
+      ]);
+      setAdmins(adminResult.data);
+      setInvitations(invitationResult.data);
+      setEmailProviderConfigured(invitationResult.emailProviderConfigured);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -597,13 +627,35 @@ function AdminManagement({
     <div className="management-grid">
       {error && <p className="form-message form-error grid-full" role="alert">{error}</p>}
       {message && <p className="form-message form-success grid-full" role="status">{message}</p>}
+      <section className="overview-stats grid-full" aria-label="Vue d’ensemble des accès">
+        <article className="overview-stat">
+          <span className="overview-stat-icon admin-stat-icon" aria-hidden="true">A</span>
+          <div><strong>{isLoading ? "—" : admins.length}</strong><span>Administrateurs actifs</span></div>
+          <span className="overview-stat-note">Comptes autorisés</span>
+        </article>
+        <article className="overview-stat">
+          <span className="overview-stat-icon invite-stat-icon" aria-hidden="true">↗</span>
+          <div><strong>{isLoading ? "—" : invitations.length}</strong><span>Invitations en attente</span></div>
+          <span className="overview-stat-note">Valables 48 heures</span>
+        </article>
+        <article className="overview-stat email-overview-stat">
+          <span className={`overview-stat-icon ${emailProviderConfigured ? "email-ready-icon" : "email-pending-icon"}`} aria-hidden="true">✉</span>
+          <div><strong>{emailProviderConfigured === null ? "Vérification" : emailProviderConfigured ? "Configuré" : "À configurer"}</strong><span>Envoi des e-mails</span></div>
+          <span className={`overview-stat-indicator ${emailProviderConfigured ? "is-ready" : ""}`} aria-hidden="true" />
+        </article>
+      </section>
       <section className="dashboard-card invite-card">
         <div className="section-heading"><div><span className="eyebrow">ACCÈS SÉCURISÉ </span><h2>Inviter un administrateur</h2></div><span className="section-icon" aria-hidden="true">＋</span></div>
         <p>Une invitation à usage unique sera envoyée par e-mail. Elle expire après 48 heures.</p>
+        {emailProviderConfigured === false && (
+          <p className="form-message form-warning" role="status">
+            L’envoi d’e-mails n’est pas configuré. Renseignez <code>RESEND_API_KEY</code> dans le fichier <code>.env</code> de l’API, puis redémarrez-la pour activer les invitations.
+          </p>
+        )}
         <form className="invite-form" onSubmit={invite}>
           <div className="field"><label htmlFor="invite-email">Adresse e-mail</label><input id="invite-email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nom@entreprise.fr" /></div>
           <div className="field"><label htmlFor="invite-role">Rôle</label><select id="invite-role" value={role} onChange={(event) => setRole(readAdminRole(event.target.value))}><option value="ADMIN">Administrateur</option><option value="SUPER_ADMIN">Super administrateur</option></select></div>
-          <button className="primary-button" disabled={busy || !csrfToken}>{busy ? "Envoi…" : "Envoyer l’invitation"} <span aria-hidden="true">→</span></button>
+          <button className="primary-button" disabled={busy || !csrfToken || emailProviderConfigured !== true}>{busy ? "Envoi…" : "Envoyer l’invitation"} <span aria-hidden="true">→</span></button>
         </form>
       </section>
 
