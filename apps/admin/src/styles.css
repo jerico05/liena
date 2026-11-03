@@ -151,7 +151,8 @@ h1, h2, p { margin-top: 0; }
   z-index: 1;
   transform: translateY(-50%);
   color: #778398;
-  font-size: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .field input, .field select, .invite-form input, .invite-form select {
@@ -178,12 +179,19 @@ h1, h2, p { margin-top: 0; }
   position: absolute;
   top: 50%;
   right: 10px;
-  padding: 4px 6px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 5px;
   transform: translateY(-50%);
   border: 0;
   background: transparent;
   color: #5f6b7b;
-  font-size: 12px;
+}
+.password-toggle svg {
+  display: block;
+  width: 18px;
+  height: 18px;
 }
 .text-button, .back-link {
   padding: 0;

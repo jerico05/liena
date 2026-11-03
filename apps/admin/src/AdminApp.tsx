@@ -252,7 +252,10 @@ function LoginPage({
         <div className="field">
           <label htmlFor="login-email"><span>Adresse e-mail</span><span className="required-note">Requis</span></label>
           <div className="input-wrap">
-            <span className="field-icon" aria-hidden="true">✉</span>
+            <svg className="field-icon" aria-hidden="true" viewBox="0 0 20 20" fill="none">
+              <rect x="2.5" y="4" width="15" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+              <path d="m3.5 5 6.5 5 6.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             <input id="login-email" type="email" autoComplete="username" required maxLength={254}
               placeholder="ex. admin@liena.fr" value={email} onChange={(event) => setEmail(event.target.value)} />
           </div>
@@ -263,11 +266,20 @@ function LoginPage({
             <button type="button" className="text-button" onClick={() => onNavigate("/forgot-password")}>Mot de passe oublié ?</button>
           </div>
           <div className="input-wrap">
-            <span className="field-icon" aria-hidden="true">⌑</span>
-            <input id="login-password" type={showPassword ? "text" : "password"} autoComplete="current-password"
-              required value={password} onChange={(event) => setPassword(event.target.value)} />
-            <button type="button" className="password-toggle" aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-              aria-pressed={showPassword} onClick={() => setShowPassword((value) => !value)}>{showPassword ? "Masquer" : "Voir"}</button>
+              <svg className="field-icon" aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                <rect x="4" y="8.5" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M6.5 8.5V6a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                <circle cx="10" cy="12.5" r="1" fill="currentColor" />
+              </svg>
+              <input id="login-password" type={showPassword ? "text" : "password"} autoComplete="current-password"
+                required value={password} onChange={(event) => setPassword(event.target.value)} />
+              <button type="button" className="password-toggle" aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                aria-pressed={showPassword} onClick={() => setShowPassword((value) => !value)}>
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+                  <path d="M2 10s2.8-5 8-5 8 5 8 5-2.8 5-8 5-8-5-8-5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                  <circle cx="10" cy="10" r="2.25" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
+              </button>
           </div>
         </div>
         <label className="remember-option">
