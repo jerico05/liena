@@ -19,6 +19,7 @@ import { app } from "../src/app";
 import { disconnectDatabase } from "../src/lib/prisma";
 import {
   createOpaqueToken,
+  csrfCookieName,
   hashToken,
   sessionCookieName,
 } from "../src/modules/admin-auth/security";
@@ -141,6 +142,7 @@ async function withAdminAndProviderRegistrations<T>(
   seeds: ProviderRegistrationSeed[],
   callback: (fixture: {
     cookie: string;
+    csrfToken: string;
     registrations: Array<{
       id: string;
       userId: string;
@@ -165,11 +167,12 @@ async function withAdminAndProviderRegistrations<T>(
     userIds.push(admin.id);
 
     const sessionToken = createOpaqueToken();
+    const csrfToken = createOpaqueToken();
     const session = await prisma.adminSession.create({
       data: {
         userId: admin.id,
         tokenHash: hashToken(sessionToken),
-        csrfTokenHash: hashToken(createOpaqueToken()),
+        csrfTokenHash: hashToken(csrfToken),
         expiresAt: new Date(Date.now() + 60 * 60 * 1000),
       },
     });
@@ -206,7 +209,8 @@ async function withAdminAndProviderRegistrations<T>(
     }
 
     return await callback({
-      cookie: `${sessionCookieName}=${encodeURIComponent(sessionToken)}`,
+      cookie: `${sessionCookieName}=${encodeURIComponent(sessionToken)}; ${csrfCookieName}=${encodeURIComponent(csrfToken)}`,
+      csrfToken,
       registrations,
     });
   } finally {
@@ -364,10 +368,124 @@ test("returns an empty list when no provider registrations are pending", async (
       headers: { cookie },
     });
     const body = await response.json();
-
     assert.equal(response.status, 200);
     assert.deepEqual(body, { data: [] });
   });
+});
+
+test("returns 404 when approving a provider registration that does not exist", async () => {
+  await withAdminAndProviderRegistrations([], async ({ cookie, csrfToken }) => {
+    const response = await fetch(
+      `${baseUrl}/api/v1/admin/provider-registrations/${randomUUID()}/approve`,
+      { method: "PATCH", headers: { cookie, "x-csrf-token": csrfToken } },
+    );
+    const body = await response.json();
+
+    assert.equal(response.status, 404);
+    assert.equal(body.error.code, "PROVIDER_REGISTRATION_NOT_FOUND");
+  });
+});
+
+test("rejects approval when a provider registration is not pending", async () => {
+  await withAdminAndProviderRegistrations(
+    [{
+      status: ProviderStatus.REJECTED,
+      firstName: "Mina",
+      lastName: "Doe",
+      email: `rejected-${randomUUID()}@example.test`,
+      businessName: "Rejected Provider",
+      description: "Already rejected registration.",
+      city: "Lomé",
+      neighborhood: "Tokoin",
+      createdAt: new Date("2026-02-01T09:00:00.000Z"),
+    }],
+    async ({ cookie, csrfToken, registrations }) => {
+      const response = await fetch(
+        `${baseUrl}/api/v1/admin/provider-registrations/${registrations[0].id}/approve`,
+        { method: "PATCH", headers: { cookie, "x-csrf-token": csrfToken } },
+      );
+      const body = await response.json();
+
+      assert.equal(response.status, 409);
+      assert.equal(body.error.code, "PROVIDER_REGISTRATION_NOT_PENDING");
+      const persisted = await prisma.providerProfile.findUniqueOrThrow({
+        where: { id: registrations[0].id },
+      });
+      assert.equal(persisted.status, ProviderStatus.REJECTED);
+      assert.equal(persisted.verifiedAt, null);
+    },
+  );
+});
+
+test("approves a pending provider registration and records the verification time", async () => {
+  await withAdminAndProviderRegistrations(
+    [{
+      status: ProviderStatus.PENDING,
+      firstName: "Afi",
+      lastName: "Mensah",
+      email: `pending-${randomUUID()}@example.test`,
+      businessName: "Afi Services",
+      description: "Pending provider registration.",
+      city: "Lomé",
+      neighborhood: "Bè",
+      createdAt: new Date("2026-02-02T09:00:00.000Z"),
+    }],
+    async ({ cookie, csrfToken, registrations }) => {
+      const startedAt = new Date();
+      const response = await fetch(
+        `${baseUrl}/api/v1/admin/provider-registrations/${registrations[0].id}/approve`,
+        { method: "PATCH", headers: { cookie, "x-csrf-token": csrfToken } },
+      );
+      const body = await response.json();
+      const finishedAt = new Date();
+
+      assert.equal(response.status, 200);
+      assert.deepEqual(Object.keys(body.data).sort(), ["id", "status", "verifiedAt"]);
+      assert.equal(body.data.id, registrations[0].id);
+      assert.equal(body.data.status, ProviderStatus.VERIFIED);
+      assert.doesNotMatch(JSON.stringify(body), /passwordHash/i);
+      assert.ok(typeof body.data.verifiedAt === "string");
+      const verifiedAt = new Date(body.data.verifiedAt);
+      assert.ok(verifiedAt >= startedAt && verifiedAt <= finishedAt);
+
+      const persisted = await prisma.providerProfile.findUniqueOrThrow({
+        where: { id: registrations[0].id },
+      });
+      assert.equal(persisted.status, ProviderStatus.VERIFIED);
+      assert.equal(persisted.verifiedAt?.toISOString(), body.data.verifiedAt);
+    },
+  );
+});
+
+test("allows only one concurrent approval of a pending provider registration", async () => {
+  await withAdminAndProviderRegistrations(
+    [{
+      status: ProviderStatus.PENDING,
+      firstName: "Komi",
+      lastName: "Doe",
+      email: `concurrent-${randomUUID()}@example.test`,
+      businessName: "Komi Services",
+      description: "Pending provider registration.",
+      city: "Lomé",
+      neighborhood: "Agoè",
+      createdAt: new Date("2026-02-03T09:00:00.000Z"),
+    }],
+    async ({ cookie, csrfToken, registrations }) => {
+      const url = `${baseUrl}/api/v1/admin/provider-registrations/${registrations[0].id}/approve`;
+      const responses = await Promise.all([
+        fetch(url, { method: "PATCH", headers: { cookie, "x-csrf-token": csrfToken } }),
+        fetch(url, { method: "PATCH", headers: { cookie, "x-csrf-token": csrfToken } }),
+      ]);
+      const bodies = await Promise.all(responses.map((response) => response.json()));
+
+      assert.deepEqual(
+        responses.map((response) => response.status).sort(),
+        [200, 409],
+      );
+      const conflictBody = bodies[responses.findIndex((response) => response.status === 409)];
+      assert.equal(conflictBody.error.code, "PROVIDER_REGISTRATION_NOT_PENDING");
+    },
+  );
 });
 
 test("supports the booking, completion, and review flow", async () => {

@@ -1,0 +1,111 @@
+{
+  "info": {
+    "name": "Liena API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection Postman pour le backend Liena, organisée par espace client, prestataire et administration."
+  },
+  "item": [
+    {
+      "name": "Catalogue",
+      "item": [
+        {
+          "name": "Lister les catégories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Détail d’une catégorie",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/categories/beaute-et-bien-etre",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "categories", "beaute-et-bien-etre"]
+            }
+          }
+        },
+        {
+          "name": "Services d’une catégorie",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/categories/beaute-et-bien-etre/services",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "categories", "beaute-et-bien-etre", "services"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Recherche",
+      "item": [
+        {
+          "name": "Recherche directe d’une prestation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"q\": \"nattes collées\",\n  \"page\": 1,\n  \"pageSize\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/services/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "services", "search"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Prestataires",
+      "item": [
+        {
+          "name": "Profil public d’un prestataire",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/providers/test-provider",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "providers", "test-provider"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Administration",
+      "item": [
+        {
+          "name": "Liste des demandes d’inscription",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/provider-registrations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "provider-registrations"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "adminSessionCookie", "value": "liena_admin_session=..." }
+  ]
+}

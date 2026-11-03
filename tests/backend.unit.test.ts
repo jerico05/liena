@@ -119,6 +119,47 @@ test("requires admin authentication to list pending provider registrations", asy
   assert.equal(body.error.code, "AUTHENTICATION_REQUIRED");
 });
 
+test("requires admin authentication to approve provider registrations", async () => {
+  const response = await fetch(
+    `${baseUrl}/api/v1/admin/provider-registrations/00000000-0000-4000-8000-000000000001/approve`,
+    { method: "PATCH" },
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.equal(body.error.code, "AUTHENTICATION_REQUIRED");
+});
+
+test("returns the active catalog categories", async () => {
+  const response = await fetch(`${baseUrl}/api/v1/categories`);
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.ok(Array.isArray(body.data));
+  assert.ok(body.data.every((item: { slug: string }) => typeof item.slug === "string"));
+});
+
+test("supports direct prestation search by keyword", async () => {
+  const response = await fetch(`${baseUrl}/api/v1/services/search`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ q: "nattes", page: 1, pageSize: 10 }),
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.ok(Array.isArray(body.data));
+  assert.ok(body.pagination.page === 1);
+});
+
+test("returns a provider profile detail for verified providers", async () => {
+  const response = await fetch(`${baseUrl}/api/v1/providers/test-provider`);
+  const body = await response.json();
+
+  assert.equal(response.status, 404);
+  assert.equal(body.error.code, "PROVIDER_NOT_FOUND");
+});
+
 test("rejects state-changing admin requests without the trusted origin", async () => {
   const response = await fetch(`${baseUrl}/api/v1/admin/login`, {
     method: "POST",

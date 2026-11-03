@@ -1,0 +1,82 @@
+import { Router } from "express";
+
+const openApiDocument = {
+  openapi: "3.0.3",
+  info: {
+    title: "Liena API",
+    version: "1.0.0",
+    description: "Backend catalogue, prestataires, validation administrative et recherche de services.",
+  },
+  servers: [{ url: "/api/v1" }],
+  paths: {
+    "/categories": {
+      get: {
+        summary: "Liste les catégories actives",
+        responses: {
+          "200": { description: "Liste des catégories actives" },
+        },
+      },
+    },
+    "/categories/{slug}": {
+      get: {
+        summary: "Détail d’une catégorie par slug",
+        parameters: [{ in: "path", name: "slug", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "Catégorie trouvée" },
+          "404": { description: "Catégorie introuvable" },
+        },
+      },
+    },
+    "/categories/{slug}/services": {
+      get: {
+        summary: "Prestations associées à une catégorie ou à un métier",
+        parameters: [{ in: "path", name: "slug", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "Services publiés" },
+          "404": { description: "Catégorie introuvable" },
+        },
+      },
+    },
+    "/services/search": {
+      post: {
+        summary: "Recherche directe d’une prestation par mot-clé",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {
+                  q: { type: "string", example: "nattes collées" },
+                  categoryId: { type: "string", format: "uuid" },
+                  city: { type: "string" },
+                  page: { type: "integer", default: 1 },
+                  pageSize: { type: "integer", default: 20 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": { description: "Résultats de recherche" },
+          "400": { description: "Validation invalide" },
+        },
+      },
+    },
+    "/providers/{slug}": {
+      get: {
+        summary: "Profil public d’un prestataire vérifié",
+        parameters: [{ in: "path", name: "slug", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "Profil public du prestataire" },
+          "404": { description: "Prestataire introuvable" },
+        },
+      },
+    },
+  },
+};
+
+export const docsRouter = Router();
+docsRouter.get("/", (_request, response) => {
+  response.status(200).json(openApiDocument);
+});

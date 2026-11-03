@@ -1,0 +1,12 @@
+{
+  "id": "liena-local-env",
+  "name": "Liena Local",
+  "values": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "enabled": true },
+    { "key": "adminSessionCookie", "value": "liena_admin_session=replace-me", "enabled": true },
+    { "key": "csrfToken", "value": "replace-me", "enabled": true }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2026-11-03T00:00:00.000Z",
+  "_postman_exported_using": "Liena backend docs"
+}

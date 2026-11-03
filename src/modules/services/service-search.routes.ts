@@ -8,6 +8,8 @@ const serviceSearchSchema = z
   .object({
     categoryId: z.string().uuid().optional(),
     city: z.string().trim().min(1).max(100).optional(),
+    q: z.string().trim().min(1).max(150).optional(),
+    query: z.string().trim().min(1).max(150).optional(),
     page: z.coerce.number().int().min(1).max(10_000).default(1),
     pageSize: z.coerce.number().int().min(1).max(50).default(20),
   })
@@ -19,12 +21,28 @@ const searchServices: RequestHandler<Record<string, string>, unknown, ServiceSea
   request,
   response,
 ) => {
-  const { categoryId, city, page, pageSize } = request.body;
+  const { categoryId, city, q, query, page, pageSize } = request.body;
+  const searchTerm = (q ?? query ?? "").trim();
+
   const where: Prisma.ServiceWhereInput = {
     status: ServiceStatus.PUBLISHED,
     deletedAt: null,
     ...(categoryId ? { categoryId } : {}),
     ...(city ? { city: { equals: city, mode: "insensitive" } } : {}),
+    ...(searchTerm
+      ? {
+          OR: [
+            { title: { contains: searchTerm, mode: "insensitive" } },
+            { description: { contains: searchTerm, mode: "insensitive" } },
+            { category: { is: { name: { contains: searchTerm, mode: "insensitive" } } } },
+            {
+              providerProfile: {
+                is: { businessName: { contains: searchTerm, mode: "insensitive" } },
+              },
+            },
+          ],
+        }
+      : {}),
     category: { is: { isActive: true } },
     providerProfile: {
       is: {
