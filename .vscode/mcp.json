@@ -1,0 +1,16 @@
+{
+  "servers": {
+    "shadcn-ui": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@jpisnice/shadcn-ui-mcp-server@3.0.0",
+        "--framework",
+        "react",
+        "--ui-library",
+        "radix"
+      ]
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { ThinkingOrb } from "thinking-orbs";
 
 const API_ROOT = `${(import.meta.env.VITE_API_URL ?? "http://localhost:3000/api/v1").replace(/\/$/, "")}/admin`;
 
@@ -139,7 +140,14 @@ export function AdminApp() {
   const handleSessionExpired = useCallback(() => setAdmin(null), []);
 
   if (loading) {
-    return <main className="page-shell"><p className="loading-message">Chargement de la console…</p></main>;
+    return (
+      <main className="page-shell">
+        <div className="loading-message" role="status" aria-live="polite">
+          <ThinkingOrb state="working" size={32} theme="light" aria-hidden="true" />
+          <span>Chargement de la console…</span>
+        </div>
+      </main>
+    );
   }
 
   if (admin) {
@@ -481,9 +489,11 @@ function AdminDashboard({
   return (
     <main className="admin-shell">
       <aside className="admin-sidebar">
-        <div className="admin-brand"><Brand compact /><span>liena</span></div>
+        <div className="admin-brand">
+          <span className="admin-brand-mark" aria-hidden="true">l</span>
+          <span>liena</span>
+        </div>
         <nav className="admin-nav" aria-label="Navigation principale">
-          <p className="admin-nav-heading">Supervision</p>
           <AdminNavButton section="dashboard" activeSection={activeSection} onSelect={setActiveSection} />
           <AdminNavButton section="requests" activeSection={activeSection} onSelect={setActiveSection} badge="0" />
           <AdminNavButton section="providers" activeSection={activeSection} onSelect={setActiveSection} />
@@ -493,7 +503,7 @@ function AdminDashboard({
         <nav className="admin-nav admin-nav-bottom" aria-label="Aide et paramètres">
           <AdminNavButton section="settings" activeSection={activeSection} onSelect={setActiveSection} />
           <AdminNavButton section="help" activeSection={activeSection} onSelect={setActiveSection} />
-          <button className="admin-nav-link" type="button" onClick={() => setConfirmLogout(true)}>
+          <button className="admin-nav-link" type="button" title="Déconnexion" onClick={() => setConfirmLogout(true)}>
             <AdminIcon name="logout" /><span>Déconnexion</span>
           </button>
         </nav>
@@ -504,11 +514,14 @@ function AdminDashboard({
           <h1>Supervision</h1>
           <label className="admin-search">
             <AdminIcon name="search" />
-            <input aria-label="Rechercher" placeholder="Rechercher un dossier, SIRET, nom…" />
+            <input aria-label="Recherche indisponible" placeholder="Rechercher un dossier, SIRET, nom…" disabled />
           </label>
-          <div className="admin-profile">
-            <span className="dashboard-avatar" aria-hidden="true">{admin.firstName.slice(0, 1)}{admin.lastName.slice(0, 1)}</span>
-            <div><strong>{admin.firstName} {admin.lastName}</strong><span>{isSuperAdmin(admin) ? "Super Admin" : "Admin"}</span></div>
+          <div className="admin-actions">
+            <span className="admin-notification-icon" aria-hidden="true"><AdminIcon name="notifications" /></span>
+            <div className="admin-profile" role="group" aria-label={`${admin.firstName} ${admin.lastName}, ${isSuperAdmin(admin) ? "Super Admin" : "Admin"}`}>
+              <span className="dashboard-avatar" aria-hidden="true">{admin.firstName.slice(0, 1)}{admin.lastName.slice(0, 1)}</span>
+              <div><strong>{admin.firstName} {admin.lastName.slice(0, 1)}.</strong><span>{isSuperAdmin(admin) ? "Super Admin" : "Admin"}</span></div>
+            </div>
           </div>
         </header>
 
@@ -544,7 +557,7 @@ function AdminDashboard({
 }
 
 type AdminSection = "dashboard" | "requests" | "providers" | "billing" | "compliance" | "settings" | "help";
-type AdminIconName = "dashboard" | "requests" | "providers" | "billing" | "compliance" | "settings" | "help" | "logout" | "search";
+type AdminIconName = "dashboard" | "requests" | "providers" | "billing" | "compliance" | "settings" | "help" | "logout" | "search" | "notifications";
 
 const adminSections: Record<AdminSection, { label: string; icon: AdminIconName }> = {
   dashboard: { label: "Tableau de bord", icon: "dashboard" },
@@ -567,6 +580,7 @@ function AdminIcon({ name }: { name: AdminIconName }) {
     help: <><circle cx="12" cy="12" r="9" /><path d="M9.6 9a2.5 2.5 0 1 1 4.3 1.8c-1.2 1.2-1.9 1.3-1.9 3" /><path d="M12 17h.01" /></>,
     logout: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" /></>,
     search: <><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></>,
+    notifications: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></>,
   };
 
   return <svg className="admin-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
@@ -589,6 +603,7 @@ function AdminNavButton({
       className={`admin-nav-link ${activeSection === section ? "is-active" : ""}`}
       type="button"
       aria-label={item.label}
+      title={item.label}
       aria-current={activeSection === section ? "page" : undefined}
       onClick={() => onSelect(section)}
     >
@@ -621,7 +636,7 @@ function AdminOverview() {
       <div className="admin-table-toolbar">
         <label className="admin-filter-search">
           <AdminIcon name="search" />
-          <input aria-label="Filtrer les dossiers" placeholder="Filtrer par nom, SIRET, spécialité…" />
+          <input aria-label="Filtrage indisponible" placeholder="Filtrer par nom, SIRET, spécialité…" disabled />
         </label>
         <div className="admin-filters" aria-label="Filtres des dossiers">
           <select aria-label="Statut" defaultValue="all" disabled><option value="all">Statut : Tous</option></select>
@@ -647,18 +662,13 @@ function AdminOverview() {
             <tbody>
               <tr><td colSpan={7}>
                 <div className="admin-no-records">
-                  <h2 id="recent-records-heading">Aucun dossier</h2>
-                  <p>Les dossiers apparaîtront ici lorsqu’ils seront disponibles.</p>
+                  <span className="admin-empty-icon"><AdminIcon name="requests" /></span>
+                  <h2 id="recent-records-heading">Aucun dossier pour le moment</h2>
+                  <p>Les dossiers apparaîtront ici lorsqu’il y en aura.</p>
                 </div>
               </td></tr>
             </tbody>
           </table>
-        </div>
-        <div className="admin-table-pagination" aria-label="Pagination">
-          <span>0 dossier</span>
-          <button type="button" disabled aria-label="Page précédente">‹</button>
-          <span>0</span>
-          <button type="button" disabled aria-label="Page suivante">›</button>
         </div>
       </section>
     </>
@@ -690,6 +700,7 @@ function AdminManagement({
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [removing, setRemoving] = useState<AdminUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const reload = useCallback(async () => {
     const [adminResult, invitationResult] = await Promise.all([
@@ -705,7 +716,7 @@ function AdminManagement({
       const message = caught instanceof Error ? caught.message : "Chargement impossible.";
       setError(message);
       if (caught instanceof ApiError && caught.status === 401) onSessionExpired();
-    });
+    }).finally(() => setIsLoading(false));
   }, [reload, onSessionExpired]);
 
   async function invite(event: FormEvent<HTMLFormElement>) {
@@ -765,6 +776,15 @@ function AdminManagement({
     }
   }
 
+  if (isLoading) {
+    return (
+      <div className="admin-management-loading" role="status" aria-live="polite">
+        <ThinkingOrb state="searching" size={32} theme="light" aria-hidden="true" />
+        <span>Chargement des accès administrateurs…</span>
+      </div>
+    );
+  }
+
   return (
     <div className="management-grid">
       {error && <p className="form-message form-error grid-full" role="alert">{error}</p>}
@@ -775,7 +795,11 @@ function AdminManagement({
         <form className="invite-form" onSubmit={invite}>
           <div className="field"><label htmlFor="invite-email">Adresse e-mail</label><input id="invite-email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nom@entreprise.fr" /></div>
           <div className="field"><label htmlFor="invite-role">Rôle</label><select id="invite-role" value={role} onChange={(event) => setRole(readAdminRole(event.target.value))}><option value="ADMIN">Administrateur</option><option value="SUPER_ADMIN">Super administrateur</option></select></div>
-          <button className="primary-button" disabled={busy || !csrfToken}>{busy ? "Envoi…" : "Envoyer l’invitation"} <span aria-hidden="true">→</span></button>
+          <button className="primary-button" aria-busy={busy} disabled={busy || !csrfToken}>
+            {busy ? (
+              <span className="button-loading"><ThinkingOrb state="working" size={20} theme="light" aria-hidden="true" />Envoi…</span>
+            ) : <>Envoyer l’invitation <span aria-hidden="true">→</span></>}
+          </button>
         </form>
       </section>
 

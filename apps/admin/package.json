@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "thinking-orbs": "^0.3.2"
   }
 }
