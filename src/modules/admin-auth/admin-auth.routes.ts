@@ -3,6 +3,7 @@ import { rateLimit } from "express-rate-limit";
 import argon2 from "argon2";
 import { UserRole, UserStatus } from "@prisma/client";
 import { z } from "zod";
+import { config } from "../../config/env";
 import { HttpError } from "../../http/errors";
 import { validateBody, validateParams } from "../../http/middleware/validate";
 import { prisma } from "../../lib/prisma";
@@ -228,7 +229,7 @@ adminAuthRouter.post(
     const { email, role } = request.body as z.output<typeof inviteSchema>;
     const token = createOpaqueToken();
     const invitation = await prisma.$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${email}))`;
+      await transaction.$queryRaw`WITH advisory_lock AS MATERIALIZED (SELECT pg_advisory_xact_lock(hashtext(${email}))) SELECT 1 FROM advisory_lock`;
       const existingUser = await transaction.user.findUnique({
         where: { email },
         select: { id: true },
@@ -297,7 +298,10 @@ adminAuthRouter.get("/invitations", requireAdmin, requireSuperAdmin, async (_req
     orderBy: { createdAt: "desc" },
     select: { id: true, email: true, role: true, expiresAt: true, createdAt: true },
   });
-  response.status(200).json({ data: invitations });
+  response.status(200).json({
+    data: invitations,
+    emailProviderConfigured: Boolean(config.RESEND_API_KEY),
+  });
 });
 
 adminAuthRouter.delete(
@@ -414,7 +418,7 @@ adminAuthRouter.post(
     if (user) {
       const token = createOpaqueToken();
       const reset = await prisma.$transaction(async (transaction) => {
-        await transaction.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${user.id}))`;
+        await transaction.$queryRaw`WITH advisory_lock AS MATERIALIZED (SELECT pg_advisory_xact_lock(hashtext(${user.id}))) SELECT 1 FROM advisory_lock`;
         await transaction.adminPasswordReset.updateMany({
           where: { userId: user.id, usedAt: null },
           data: { usedAt: new Date() },
@@ -576,7 +580,7 @@ adminAuthRouter.patch(
     }
 
     await prisma.$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(7412031123)`;
+      await transaction.$queryRaw`WITH advisory_lock AS MATERIALIZED (SELECT pg_advisory_xact_lock(7412031123)) SELECT 1 FROM advisory_lock`;
       const target = await transaction.user.findUnique({
         where: { id },
         select: { id: true, roles: true, status: true, deletedAt: true },
@@ -641,7 +645,7 @@ adminAuthRouter.delete(
     }
 
     await prisma.$transaction(async (transaction) => {
-      await transaction.$queryRaw`SELECT pg_advisory_xact_lock(7412031123)`;
+      await transaction.$queryRaw`WITH advisory_lock AS MATERIALIZED (SELECT pg_advisory_xact_lock(7412031123)) SELECT 1 FROM advisory_lock`;
       const target = await transaction.user.findUnique({
         where: { id },
         select: { id: true, roles: true, status: true, deletedAt: true },
