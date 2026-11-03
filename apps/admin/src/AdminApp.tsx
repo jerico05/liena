@@ -467,32 +467,6 @@ function AdminDashboard({
   }
 
   return (
-<<<<<<< Updated upstream
-    <main className="dashboard-shell">
-      <header className="dashboard-header">
-        <Brand compact />
-        <div className="dashboard-user">
-          <div><strong>{admin.firstName} {admin.lastName}</strong><span>{isSuperAdmin(admin) ? "Super administrateur" : "Administrateur"}</span></div>
-          <button className="secondary-button" onClick={() => setConfirmLogout(true)}>Déconnexion</button>
-        </div>
-      </header>
-      <section className="dashboard-content">
-        <div className="dashboard-title">
-          <div><span className="eyebrow">ESPACE ADMINISTRATION</span><h1>Bienvenue, {admin.firstName}</h1><p>Votre console de gestion Liena.</p></div>
-          <span className="status-pill"><span />Session protégée</span>
-        </div>
-        {logoutError && <p className="form-message form-error" role="alert">{logoutError}</p>}
-        {isSuperAdmin(admin) ? (
-          <AdminManagement csrfToken={csrfToken} onSessionExpired={onSessionExpired} />
-        ) : (
-          <section className="dashboard-card">
-            <h2>Accès administrateur</h2>
-            <p>Votre compte dispose des autorisations administrateur. Les fonctions de gestion des comptes sont réservées au super-administrateur.</p>
-          </section>
-        )}
-      </section>
-      <footer className="dashboard-footer">© 2026 Liena · Console d’administration</footer>
-=======
     <main className="admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-brand"><Brand compact /><span>liena</span></div>
@@ -544,7 +518,6 @@ function AdminDashboard({
           )}
         </section>
       </div>
->>>>>>> Stashed changes
       {confirmLogout && (
         <ConfirmDialog
           title="Confirmer la déconnexion"
