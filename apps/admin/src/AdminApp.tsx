@@ -453,6 +453,7 @@ function AdminDashboard({
 }) {
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+  const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
 
   async function confirmSignOut() {
     setLogoutError("");
@@ -466,6 +467,7 @@ function AdminDashboard({
   }
 
   return (
+<<<<<<< Updated upstream
     <main className="dashboard-shell">
       <header className="dashboard-header">
         <Brand compact />
@@ -490,6 +492,59 @@ function AdminDashboard({
         )}
       </section>
       <footer className="dashboard-footer">© 2026 Liena · Console d’administration</footer>
+=======
+    <main className="admin-shell">
+      <aside className="admin-sidebar">
+        <div className="admin-brand"><Brand compact /><span>liena</span></div>
+        <nav className="admin-nav" aria-label="Navigation principale">
+          <p className="admin-nav-heading">Supervision</p>
+          <AdminNavButton section="dashboard" activeSection={activeSection} onSelect={setActiveSection} />
+          <AdminNavButton section="requests" activeSection={activeSection} onSelect={setActiveSection} badge="0" />
+          <AdminNavButton section="providers" activeSection={activeSection} onSelect={setActiveSection} />
+          <AdminNavButton section="billing" activeSection={activeSection} onSelect={setActiveSection} />
+          <AdminNavButton section="compliance" activeSection={activeSection} onSelect={setActiveSection} />
+        </nav>
+        <nav className="admin-nav admin-nav-bottom" aria-label="Aide et paramètres">
+          <AdminNavButton section="settings" activeSection={activeSection} onSelect={setActiveSection} />
+          <AdminNavButton section="help" activeSection={activeSection} onSelect={setActiveSection} />
+          <button className="admin-nav-link" type="button" onClick={() => setConfirmLogout(true)}>
+            <AdminIcon name="logout" /><span>Déconnexion</span>
+          </button>
+        </nav>
+      </aside>
+
+      <div className="admin-main">
+        <header className="admin-topbar">
+          <h1>Supervision</h1>
+          <label className="admin-search">
+            <AdminIcon name="search" />
+            <input aria-label="Rechercher" placeholder="Rechercher un dossier, SIRET, nom…" />
+          </label>
+          <div className="admin-profile">
+            <span className="dashboard-avatar" aria-hidden="true">{admin.firstName.slice(0, 1)}{admin.lastName.slice(0, 1)}</span>
+            <div><strong>{admin.firstName} {admin.lastName}</strong><span>{isSuperAdmin(admin) ? "Super Admin" : "Admin"}</span></div>
+          </div>
+        </header>
+
+        <section className="admin-page">
+          {logoutError && <p className="form-message form-error" role="alert">{logoutError}</p>}
+          {activeSection === "dashboard" ? (
+            <AdminOverview />
+          ) : activeSection === "settings" ? (
+            isSuperAdmin(admin) ? (
+              <AdminManagement csrfToken={csrfToken} onSessionExpired={onSessionExpired} />
+            ) : (
+              <section className="admin-empty-page">
+                <h2>Paramètres</h2>
+                <p>La gestion des comptes est réservée au super-administrateur.</p>
+              </section>
+            )
+          ) : (
+            <AdminEmptySection section={activeSection} />
+          )}
+        </section>
+      </div>
+>>>>>>> Stashed changes
       {confirmLogout && (
         <ConfirmDialog
           title="Confirmer la déconnexion"
@@ -500,6 +555,138 @@ function AdminDashboard({
         />
       )}
     </main>
+  );
+}
+
+type AdminSection = "dashboard" | "requests" | "providers" | "billing" | "compliance" | "settings" | "help";
+type AdminIconName = "dashboard" | "requests" | "providers" | "billing" | "compliance" | "settings" | "help" | "logout" | "search";
+
+const adminSections: Record<AdminSection, { label: string; icon: AdminIconName }> = {
+  dashboard: { label: "Tableau de bord", icon: "dashboard" },
+  requests: { label: "Demandes", icon: "requests" },
+  providers: { label: "Prestataires", icon: "providers" },
+  billing: { label: "Facturation", icon: "billing" },
+  compliance: { label: "Conformité", icon: "compliance" },
+  settings: { label: "Paramètres", icon: "settings" },
+  help: { label: "Centre d’aide", icon: "help" },
+};
+
+function AdminIcon({ name }: { name: AdminIconName }) {
+  const paths: Record<AdminIconName, ReactNode> = {
+    dashboard: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
+    requests: <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" /><path d="M9 3V2m6 1V2" /></>,
+    providers: <><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="10" cy="7" r="4" /><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
+    billing: <><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 7h8M8 11h8M8 15h3" /><path d="M7 3V1m10 2V1" /></>,
+    compliance: <><path d="M12 3 20 6v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3Z" /><path d="m9 12 2 2 4-4" /></>,
+    settings: <><circle cx="12" cy="12" r="3" /><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.7a8 8 0 0 1-1.7 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.7-1.4-2.4L7.3 15a8 8 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.7a8 8 0 0 1 1.7-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.7 1l1.7-.7 1.4 2.4-1.4 1.1a8 8 0 0 1-.1 2Z" /></>,
+    help: <><circle cx="12" cy="12" r="9" /><path d="M9.6 9a2.5 2.5 0 1 1 4.3 1.8c-1.2 1.2-1.9 1.3-1.9 3" /><path d="M12 17h.01" /></>,
+    logout: <><path d="M10 17l5-5-5-5M15 12H3" /><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" /></>,
+    search: <><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></>,
+  };
+
+  return <svg className="admin-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>;
+}
+
+function AdminNavButton({
+  section,
+  activeSection,
+  onSelect,
+  badge,
+}: {
+  section: AdminSection;
+  activeSection: AdminSection;
+  onSelect: (section: AdminSection) => void;
+  badge?: string;
+}) {
+  const item = adminSections[section];
+  return (
+    <button
+      className={`admin-nav-link ${activeSection === section ? "is-active" : ""}`}
+      type="button"
+      aria-label={item.label}
+      aria-current={activeSection === section ? "page" : undefined}
+      onClick={() => onSelect(section)}
+    >
+      <AdminIcon name={item.icon} />
+      <span>{item.label}</span>
+      {badge !== undefined && <span className="admin-nav-badge">{badge}</span>}
+    </button>
+  );
+}
+
+function AdminOverview() {
+  const stats = [
+    { label: "Total Prestataires", icon: "providers" as const },
+    { label: "Dossiers Validés", icon: "compliance" as const },
+    { label: "En attente (Vetting)", icon: "requests" as const },
+    { label: "Refusés / Expirés", icon: "billing" as const },
+  ];
+
+  return (
+    <>
+      <div className="admin-stats" aria-label="Indicateurs de supervision">
+        {stats.map((stat) => (
+          <article className="admin-stat-card" key={stat.label}>
+            <div><span>{stat.label}</span><strong>0</strong></div>
+            <span className="admin-stat-icon"><AdminIcon name={stat.icon} /></span>
+          </article>
+        ))}
+      </div>
+
+      <div className="admin-table-toolbar">
+        <label className="admin-filter-search">
+          <AdminIcon name="search" />
+          <input aria-label="Filtrer les dossiers" placeholder="Filtrer par nom, SIRET, spécialité…" />
+        </label>
+        <div className="admin-filters" aria-label="Filtres des dossiers">
+          <select aria-label="Statut" defaultValue="all" disabled><option value="all">Statut : Tous</option></select>
+          <select aria-label="Métier" defaultValue="all" disabled><option value="all">Métier : Tous</option></select>
+          <select aria-label="Date" defaultValue="recent" disabled><option value="recent">Date : Récentes</option></select>
+        </div>
+      </div>
+
+      <section className="admin-records-card" aria-labelledby="recent-records-heading">
+        <div className="admin-table-scroll">
+          <table className="admin-records-table">
+            <thead>
+              <tr>
+                <th scope="col"><input type="checkbox" aria-label="Sélectionner tous les dossiers" disabled /></th>
+                <th scope="col">N° dossier</th>
+                <th scope="col">Professionnel</th>
+                <th scope="col">Métier & spécialité</th>
+                <th scope="col">Zone d’intervention</th>
+                <th scope="col">Date & heure</th>
+                <th scope="col">Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colSpan={7}>
+                <div className="admin-no-records">
+                  <h2 id="recent-records-heading">Aucun dossier</h2>
+                  <p>Les dossiers apparaîtront ici lorsqu’ils seront disponibles.</p>
+                </div>
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div className="admin-table-pagination" aria-label="Pagination">
+          <span>0 dossier</span>
+          <button type="button" disabled aria-label="Page précédente">‹</button>
+          <span>0</span>
+          <button type="button" disabled aria-label="Page suivante">›</button>
+        </div>
+      </section>
+    </>
+  );
+}
+
+function AdminEmptySection({ section }: { section: AdminSection }) {
+  const { label } = adminSections[section];
+  return (
+    <section className="admin-empty-page">
+      <h2>{label}</h2>
+      <p>Aucune donnée disponible pour le moment.</p>
+    </section>
   );
 }
 
