@@ -15,7 +15,10 @@ async function bootstrapAdmin(emailInput: string): Promise<void> {
   const email = parsedEmail.data;
   const token = createOpaqueToken();
   const invitation = await prisma.$transaction(async (transaction) => {
-    await transaction.$queryRaw`SELECT pg_advisory_xact_lock(7412031123)`;
+    await transaction.$queryRaw<{ locked: boolean }[]>`
+      SELECT true AS locked
+      FROM (SELECT pg_advisory_xact_lock(7412031123)) AS advisory_lock
+    `;
     await transaction.adminInvitation.updateMany({
       where: {
         role: UserRole.SUPER_ADMIN,

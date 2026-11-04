@@ -4,3 +4,7 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.docker.example
+
+# Local Netlify folder
+.netlify
