@@ -1,6 +1,11 @@
 node_modules/
 dist/
 coverage/
+*.tsbuildinfo
+
 .env
 .env.*
 !.env.example
+
+apps/admin/dist/
+apps/api/dist/

@@ -1,0 +1,8 @@
+{
+  "name": "@liena/shared-utils",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Utilitaires partagés (formatage, helpers)",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts"
+}

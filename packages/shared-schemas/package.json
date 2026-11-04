@@ -1,0 +1,11 @@
+{
+  "name": "@liena/shared-schemas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Schémas Zod partagés entre API et clients",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "zod": "^4.6.7"
+  }
+}
