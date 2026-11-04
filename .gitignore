@@ -9,3 +9,6 @@ coverage/
 
 apps/admin/dist/
 apps/api/dist/
+
+# Local Netlify folder
+.netlify
