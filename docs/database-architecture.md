@@ -2,7 +2,7 @@
 
 ## Périmètre et hypothèses
 
-Le dossier Liena ne contenait ni backend, ni modèle de données, ni version Prisma. Le socle est donc autonome et épingle Prisma CLI/client à 7.9.0, version déjà installée dans le backend voisin, sans réutiliser son modèle fonctionnel. Le schéma utilise PostgreSQL et les migrations SQL de Prisma.
+Le backend Liena est structuré en modules Express avec Prisma 7.9.0, PostgreSQL et migrations SQL versionnées. Le schéma actuel couvre le catalogue, les comptes, les prestataires, les réservations et le workflow demande/devis/mission.
 
 Hypothèses MVP explicites :
 
@@ -11,21 +11,24 @@ Hypothèses MVP explicites :
 - Un compte peut cumuler les rôles client, prestataire et administrateur. Les rôles, l'état du compte et la vérification professionnelle sont des dimensions distinctes.
 - Un profil ne conserve pas de note moyenne ni de compteur d'avis dérivés; ces valeurs se calculent à partir des avis publiés.
 - Une réservation en attente ne bloque pas un créneau. La confirmation transactionnelle du prestataire le réserve; les réservations acceptées, planifiées, en cours ou litigieuses sont incompatibles avec tout chevauchement.
+- Une demande de prestation, un devis, une mission et une réservation sont des concepts distincts. L'acceptation d'un devis crée une mission; elle ne crée pas une réservation.
 
 ## Relations structurantes
 
 - `User` possède zéro ou un `ProviderProfile`; `User.roles` est un tableau d'énumérations pour permettre le cumul.
+- `ProviderProfile.professionCategoryId` fixe un seul métier enfant pour le profil; les services créés via l'API doivent appartenir à ce métier.
+- `ServiceRequest` appartient à un client et un métier; `Quote` appartient à un seul prestataire et une demande; `Mission` référence de manière composite le devis accepté, la demande, le client et le profil prestataire.
 - `Service` appartient à un profil prestataire et à une catégorie. `Booking(serviceId, providerProfileId)` référence la paire correspondante de `Service`; une demande ne peut donc pas combiner le service d'un autre prestataire.
 - `Booking` conserve le titre, la description, le type/prix/devise/durée de l'offre, le nom professionnel, la catégorie, le prix/devise acceptés et les éléments utiles de l'adresse en colonnes d'instantané. Un trigger vérifie que l'adresse choisie appartient au client; elle peut ensuite être supprimée ou modifiée sans altérer l'historique.
 - Une conversation est associée à un client et à un profil prestataire. `ConversationParticipant` autorise les membres; la clé étrangère composite de `Message` exige que son expéditeur soit membre de la conversation. La lecture des conversations reste à protéger côté serveur.
-- `Review(bookingId, authorId, providerProfileId)` référence la réservation par clé étrangère composite. L'unicité sur cette clé permet au plus un avis pour la réservation; un trigger exige que la réservation soit terminée.
+- `Review` cible exactement une réservation ou une mission terminée. Les clés étrangères composites garantissent l'auteur client et le profil associé; un trigger vérifie le statut terminé.
 - Les signalements utilisent une colonne FK distincte par type de cible et un `CHECK` impose la correspondance avec `targetType`. Contrairement à un identifiant polymorphe seul, chaque cible possède ainsi une vraie FK.
 
 ## Intégrité et concurrence
 
 Prisma n'exprime pas les `CHECK`, les contraintes d'exclusion ni les triggers utilisés ici; ils sont ajoutés dans la migration initiale. `btree_gist` permet l'exclusion des plages `tstzrange` par prestataire. L'index d'exclusion PostgreSQL sérialise les confirmations concurrentes et interdit tout créneau qui se chevauche, sans dépendre d'une vérification préalable sujette à une course.
 
-L'acceptation doit encore être effectuée dans une transaction applicative : vérifier les disponibilités récurrentes et les exceptions, puis modifier le statut en choisissant le créneau. La contrainte d'exclusion est la dernière garantie pour les réservations concurrentes; elle ne vérifie pas que le créneau respecte les heures hebdomadaires ou les exceptions.
+L'acceptation d'un devis est transactionnelle et sérialisable; un index partiel garantit un seul devis accepté par demande. La planification de réservation ou mission vérifie les disponibilités hebdomadaires, exceptions et chevauchements; les exclusions PostgreSQL restent la garantie finale en cas de requêtes simultanées.
 
 Le fuseau IANA du profil permet de convertir les règles hebdomadaires locales vers des instants UTC. Les exceptions sont stockées comme intervalles UTC indisponibles. Les créneaux réservés sont représentés par les réservations actives et leur contrainte d'exclusion.
 
@@ -49,8 +52,8 @@ Les index spatiaux, trigrammes et recherche plein texte ne sont pas ajoutés au 
 
 ## Sécurité applicative et limites
 
-Le dépôt Liena n'a pas encore d'API : aucun contrôle HTTP de propriété, de rôle, d'accès à une réservation ou à une conversation ne peut être implémenté ou testé ici. L'API devra authentifier l'acteur, vérifier côté serveur son rôle et sa relation à chaque ressource, et ne jamais se fier à un rôle ou à un prix reçu du navigateur.
+L'authentification Yeria n'est pas encore intégrée. `x-user-id` n'est accepté que par l'adaptateur de développement opt-in hors production et est résolu vers un compte actif réel. Il ne constitue pas une authentification de production. Les contrôles de rôle et de propriété sont réalisés au niveau des routes; les contraintes SQL renforcent l'intégrité.
 
 RLS n'est pas activé. Avec un rôle de connexion partagé par Prisma, des politiques basées sur des variables de session exigeraient un protocole fiable de configuration/effacement de contexte à chaque transaction et des tests de pool. L'ajouter sans cette stratégie risquerait une fuite entre requêtes.
 
-Le stockage ne valide pas les mots de passe hachés : l'API doit les hacher avec un algorithme adapté. La base garantit que le champ est non nul, pas qu'il contient un hash cryptographiquement valide.
+Les zones géographiques sont encore des champs texte; aucun référentiel zone administrable n'a été défini. Les pièces jointes de messagerie ne sont pas exposées par l'API, faute de stockage et de contrôle sécurisé des fichiers.

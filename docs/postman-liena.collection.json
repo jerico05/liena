@@ -2,110 +2,213 @@
   "info": {
     "name": "Liena API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Collection Postman pour le backend Liena, organisée par espace client, prestataire et administration."
+    "description": "Collection de routes réellement montées par Liena. Pour les routes utilisateur, x-user-id est une identité de test uniquement : le serveur doit être hors production avec DEV_AUTH_ENABLED=true et l'UUID doit désigner un compte actif réel. Aucun jeton Yeria n'est encore intégré."
   },
+  "auth": { "type": "noauth" },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const status = pm.response.code;",
+          "const documentedStatuses = [200, 201, 202, 204, 400, 401, 403, 404, 409, 429, 503];",
+          "pm.test('HTTP status is documented and not a server error', function () { pm.expect(documentedStatuses).to.include(status); });",
+          "pm.test('Response envelope matches the API contract', function () {",
+          "  if (status === 204) { pm.expect(pm.response.text()).to.eql(''); return; }",
+          "  const body = pm.response.json();",
+          "  pm.expect(body).to.be.an('object');",
+          "  if (status >= 400) {",
+          "    pm.expect(body.error).to.be.an('object');",
+          "    pm.expect(body.error.code).to.be.a('string');",
+          "    pm.expect(body.error.message).to.be.a('string');",
+          "    pm.expect(body.requestId).to.be.a('string');",
+          "  } else if (pm.info.requestName === 'Health') { pm.expect(body.status).to.eql('ok');",
+          "  } else if (pm.info.requestName === 'Récupérer OpenAPI') { pm.expect(body.openapi).to.eql('3.0.3'); pm.expect(body.paths).to.be.an('object');",
+          "  } else if (pm.info.requestName === 'Obtenir CSRF admin') { pm.expect(body.csrfToken).to.be.a('string');",
+          "  } else { pm.expect(body).to.have.any.keys('data', 'status', 'csrfToken', 'openapi'); }",
+          "});"
+        ]
+      }
+    }
+  ],
   "item": [
     {
-      "name": "Catalogue",
+      "name": "Santé et catalogue",
       "item": [
-        {
-          "name": "Lister les catégories",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/categories",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "categories"]
-            }
-          }
-        },
-        {
-          "name": "Détail d’une catégorie",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/categories/beaute-et-bien-etre",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "categories", "beaute-et-bien-etre"]
-            }
-          }
-        },
-        {
-          "name": "Services d’une catégorie",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/categories/beaute-et-bien-etre/services",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "categories", "beaute-et-bien-etre", "services"]
-            }
-          }
-        }
+        { "name": "Health", "request": { "method": "GET", "url": "{{baseUrl}}/health" } },
+        { "name": "Récupérer OpenAPI", "request": { "method": "GET", "url": "{{baseUrl}}/api-docs" } },
+        { "name": "Catégories", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/categories" } },
+        { "name": "Détail catégorie/métier", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/categories/{{categorySlug}}" } },
+        { "name": "Prestations catégorie/métier", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/categories/{{categorySlug}}/services" } },
+        { "name": "Recherche prestation", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"q\": \"réparation plomberie\",\n  \"city\": \"Lomé\",\n  \"page\": 1,\n  \"pageSize\": 20\n}" }, "url": "{{baseUrl}}/api/v1/services/search" } }
       ]
     },
     {
-      "name": "Recherche",
+      "name": "Zones géographiques",
       "item": [
-        {
-          "name": "Recherche directe d’une prestation",
-          "request": {
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"q\": \"nattes collées\",\n  \"page\": 1,\n  \"pageSize\": 10\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/services/search",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "services", "search"]
-            }
-          }
-        }
+        { "name": "Zones actives publiques", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/location-zones?countryCode={{countryCode}}&city={{city}}" } },
+        { "name": "Lister zones admin", "request": { "method": "GET", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}; {{adminCsrfCookie}}" }], "url": "{{baseUrl}}/api/v1/admin/location-zones?countryCode={{countryCode}}&city={{city}}&active=true" } },
+        { "name": "Créer zone admin", "request": { "method": "POST", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}; {{adminCsrfCookie}}" }, { "key": "Origin", "value": "{{appOrigin}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"countryCode\": \"TG\",\n  \"city\": \"Lomé\",\n  \"neighborhood\": \"Tokoin\",\n  \"isActive\": true\n}" }, "url": "{{baseUrl}}/api/v1/admin/location-zones" } },
+        { "name": "Modifier zone admin", "request": { "method": "PATCH", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}; {{adminCsrfCookie}}" }, { "key": "Origin", "value": "{{appOrigin}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"isActive\":true}" }, "url": "{{baseUrl}}/api/v1/admin/location-zones/{{locationZoneId}}" } },
+        { "name": "Désactiver zone admin", "request": { "method": "DELETE", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}; {{adminCsrfCookie}}" }, { "key": "Origin", "value": "{{appOrigin}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/v1/admin/location-zones/{{locationZoneId}}" } }
       ]
     },
     {
-      "name": "Prestataires",
+      "name": "Prestataires et services",
       "item": [
-        {
-          "name": "Profil public d’un prestataire",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/providers/test-provider",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "providers", "test-provider"]
-            }
-          }
-        }
+        { "name": "Rechercher prestataires", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/providers/search?q={{providerQuery}}&city={{city}}&categoryId={{categoryId}}&minRating=0&page=1&pageSize=20" } },
+        { "name": "Profil prestataire public", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/providers/{{providerSlug}}" } },
+        { "name": "Mon profil prestataire", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/providers/me/profile" } },
+        { "name": "Modifier mon profil prestataire", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"description\": \"Présentation actualisée de mon activité.\",\n  \"city\": \"Lomé\"\n}" }, "url": "{{baseUrl}}/api/v1/providers/me/profile" } },
+        { "name": "Soumettre demande prestataire", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"professionCategoryId\": \"{{categoryId}}\",\n  \"businessName\": \"Atelier de démonstration\",\n  \"description\": \"Prestations artisanales sur rendez-vous.\",\n  \"city\": \"Lomé\",\n  \"countryCode\": \"TG\"\n}" }, "url": "{{baseUrl}}/api/v1/providers/register" } },
+        { "name": "Lister prestations publiques", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/providers/{{providerSlug}}/services" } },
+        { "name": "Lister mes prestations", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/providers/{{providerSlug}}/services/manage" } },
+        { "name": "Créer prestation brouillon", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"title\": \"Réparation test\",\n  \"description\": \"Réparation et entretien avec déplacement dans la zone.\",\n  \"pricingType\": \"QUOTE\"\n}" }, "url": "{{baseUrl}}/api/v1/providers/{{providerSlug}}/services" } },
+        { "name": "Modifier/publier prestation", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"PUBLISHED\"\n}" }, "url": "{{baseUrl}}/api/v1/providers/{{providerSlug}}/services/{{serviceId}}" } },
+        { "name": "Archiver prestation", "request": { "method": "DELETE", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/providers/{{providerSlug}}/services/{{serviceId}}" } }
+      ]
+    },
+    {
+      "name": "Compte utilisateur",
+      "item": [
+        { "name": "Mon profil", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/users/me" } },
+        { "name": "Modifier mon profil", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Demo\",\n  \"lastName\": \"Client\"\n}" }, "url": "{{baseUrl}}/api/v1/users/me" } },
+        { "name": "Lister mes adresses", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/users/me/addresses" } },
+        { "name": "Créer une adresse", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"label\": \"Domicile\",\n  \"city\": \"Lomé\",\n  \"neighborhood\": \"Tokoin\",\n  \"isDefault\": true\n}" }, "url": "{{baseUrl}}/api/v1/users/me/addresses" } },
+        { "name": "Modifier une adresse", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"neighborhood\": \"Bè\"\n}" }, "url": "{{baseUrl}}/api/v1/users/me/addresses/{{addressId}}" } },
+        { "name": "Supprimer une adresse", "request": { "method": "DELETE", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/users/me/addresses/{{addressId}}" } }
+      ]
+    },
+    {
+      "name": "Demandes",
+      "item": [
+        { "name": "Lister mes demandes", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/requests" } },
+        { "name": "Demandes accessibles au prestataire", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/requests/available" } },
+        { "name": "Créer une demande", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"title\": \"Réparer une fuite\",\n  \"description\": \"Fuite sous évier, merci de proposer un devis détaillé.\",\n  \"city\": \"Lomé\",\n  \"neighborhood\": \"Tokoin\"\n}" }, "url": "{{baseUrl}}/api/v1/requests" } },
+        { "name": "Consulter une demande", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/requests/{{requestId}}" } },
+        { "name": "Annuler une demande ouverte", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/requests/{{requestId}}/cancel" } }
+      ]
+    },
+    {
+      "name": "Devis et missions",
+      "item": [
+        { "name": "Lister mes devis", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/quotes/mine" } },
+        { "name": "Lister les devis d'une demande", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/quotes/requests/{{requestId}}" } },
+        { "name": "Proposer un devis", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"amount\": 15000,\n  \"currency\": \"XOF\",\n  \"message\": \"Je peux effectuer cette réparation cette semaine.\",\n  \"estimatedDurationDays\": 1\n}" }, "url": "{{baseUrl}}/api/v1/quotes/requests/{{requestId}}" } },
+        { "name": "Accepter un devis", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/quotes/{{quoteId}}/accept" } },
+        { "name": "Refuser un devis", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/quotes/{{quoteId}}/decline" } },
+        { "name": "Retirer mon devis", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/quotes/{{quoteId}}/withdraw" } },
+        { "name": "Lister mes missions", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/missions" } },
+        { "name": "Détail mission", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/missions/{{missionId}}" } },
+        { "name": "Planifier une mission", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"SCHEDULED\",\n  \"startsAt\": \"2030-04-15T10:00:00.000Z\",\n  \"endsAt\": \"2030-04-15T11:00:00.000Z\"\n}" }, "url": "{{baseUrl}}/api/v1/missions/{{missionId}}/status" } },
+        { "name": "Démarrer une mission", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"status\":\"IN_PROGRESS\"}" }, "url": "{{baseUrl}}/api/v1/missions/{{missionId}}/status" } },
+        { "name": "Terminer une mission", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"status\":\"COMPLETED\"}" }, "url": "{{baseUrl}}/api/v1/missions/{{missionId}}/status" } }
+      ]
+    },
+    {
+      "name": "Réservations et disponibilités",
+      "item": [
+        { "name": "Lister mes réservations", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/bookings" } },
+        { "name": "Créer une réservation", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"providerProfileId\": \"{{providerProfileId}}\",\n  \"serviceId\": \"{{serviceId}}\",\n  \"requestedStartsAt\": \"2030-04-15T10:00:00.000Z\"\n}" }, "url": "{{baseUrl}}/api/v1/bookings" } },
+        { "name": "Détail réservation", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/bookings/{{bookingId}}" } },
+        { "name": "Accepter réservation (prestataire)", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACCEPTED\",\n  \"startsAt\": \"2030-04-15T10:00:00.000Z\",\n  \"endsAt\": \"2030-04-15T11:00:00.000Z\",\n  \"agreedPrice\": 15000\n}" }, "url": "{{baseUrl}}/api/v1/bookings/{{bookingId}}/status" } },
+        { "name": "Consulter mes disponibilités", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/availability" } },
+        { "name": "Ajouter créneau hebdomadaire", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"dayOfWeek\": 1,\n  \"startsAt\": \"08:00\",\n  \"endsAt\": \"17:00\"\n}" }, "url": "{{baseUrl}}/api/v1/availability/slots" } },
+        { "name": "Supprimer créneau", "request": { "method": "DELETE", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/availability/slots/{{availabilitySlotId}}" } },
+        { "name": "Ajouter indisponibilité", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"startsAt\": \"2030-04-15T10:00:00.000Z\",\n  \"endsAt\": \"2030-04-15T12:00:00.000Z\",\n  \"reason\": \"Indisponible\"\n}" }, "url": "{{baseUrl}}/api/v1/availability/exceptions" } },
+        { "name": "Supprimer indisponibilité", "request": { "method": "DELETE", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/availability/exceptions/{{availabilityExceptionId}}" } }
+      ]
+    },
+    {
+      "name": "Conversations, favoris, avis, notifications et signalements",
+      "item": [
+        { "name": "Lister conversations", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/conversations" } },
+        { "name": "Lire messages", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/conversations/{{conversationId}}/messages" } },
+        { "name": "Envoyer message texte", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"content\":\"Bonjour, pouvons-nous convenir d'un horaire ?\"}" }, "url": "{{baseUrl}}/api/v1/conversations/{{conversationId}}/messages" } },
+        { "name": "Marquer conversation lue", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/conversations/{{conversationId}}/read" } },
+        { "name": "Mes favoris", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/favorites" } },
+        { "name": "Ajouter favori prestataire", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/favorites/providers/{{providerProfileId}}" } },
+        { "name": "Retirer favori prestataire", "request": { "method": "DELETE", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/favorites/providers/{{providerProfileId}}" } },
+        { "name": "Ajouter favori service", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/favorites/services/{{serviceId}}" } },
+        { "name": "Retirer favori service", "request": { "method": "DELETE", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/favorites/services/{{serviceId}}" } },
+        { "name": "Avis publics prestataire", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/reviews/providers/{{providerProfileId}}" } },
+        { "name": "Avis après réservation", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"rating\":5,\"comment\":\"Très bonne prestation.\"}" }, "url": "{{baseUrl}}/api/v1/reviews/bookings/{{bookingId}}" } },
+        { "name": "Avis après mission", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"rating\":5,\"comment\":\"Très bonne prestation.\"}" }, "url": "{{baseUrl}}/api/v1/reviews/missions/{{missionId}}" } },
+        { "name": "Répondre à un avis", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"response\":\"Merci pour votre retour.\"}" }, "url": "{{baseUrl}}/api/v1/reviews/providers/{{providerProfileId}}/reviews/{{reviewId}}/response" } },
+        { "name": "Mes notifications", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/notifications" } },
+        { "name": "Marquer notification lue", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/notifications/{{notificationId}}/read" } },
+        { "name": "Marquer toutes lues", "request": { "method": "PATCH", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/notifications/read-all" } },
+        { "name": "Créer signalement", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"targetType\": \"SERVICE\",\n  \"targetId\": \"{{serviceId}}\",\n  \"reason\": \"Contenu inexact\",\n  \"description\": \"Informations à vérifier.\"\n}" }, "url": "{{baseUrl}}/api/v1/reports" } }
+      ]
+    },
+    {
+      "name": "Cas négatifs",
+      "description": "Ces exemples vérifient les contrats d'erreur. L'authentification x-user-id est une identité de test uniquement et reste désactivée par défaut.",
+      "item": [
+        { "name": "Refuser pagination service invalide (400)", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"pageSize\":500}" }, "url": "{{baseUrl}}/api/v1/services/search" }, "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Retourne 400', function () { pm.response.to.have.status(400); });", "const body = pm.response.json();", "pm.test('Erreur de validation structurée', function () { pm.expect(body.error.code).to.eql('VALIDATION_ERROR'); pm.expect(body.requestId).to.be.a('string'); });"] } }] },
+        { "name": "Refuser route privée sans identité (401)", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/users/me" }, "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Retourne 401 sans identité', function () { pm.response.to.have.status(401); });", "const body = pm.response.json();", "pm.test('Erreur authentification structurée', function () { pm.expect(body.error.code).to.eql('AUTHENTICATION_REQUIRED'); pm.expect(body.requestId).to.be.a('string'); });"] } }] }
       ]
     },
     {
       "name": "Administration",
       "item": [
-        {
-          "name": "Liste des demandes d’inscription",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/admin/provider-registrations",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "v1", "admin", "provider-registrations"]
-            }
-          }
-        }
+        { "name": "Obtenir CSRF admin", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/admin/csrf" }, "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const body = pm.response.json();", "pm.environment.set('csrfToken', body.csrfToken);", "const cookies = pm.response.headers.all().filter(h => h.key.toLowerCase() === 'set-cookie').map(h => h.value);", "const csrf = cookies.map(c => c.split(';')[0]).find(c => /^(?:__Host-)?liena_admin_csrf=/.test(c));", "if (csrf) { pm.environment.set('adminCsrfCookie', csrf); pm.environment.set('adminSessionCookie', csrf); }", "pm.test('Jeton CSRF reçu', function () { pm.expect(body.csrfToken).to.be.a('string'); });"] } }] },
+        { "name": "Connexion admin", "request": { "method": "POST", "header": [{ "key": "Origin", "value": "{{appOrigin}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"{{adminEmail}}\",\"password\":\"{{adminPassword}}\"}" }, "url": "{{baseUrl}}/api/v1/admin/login" }, "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const cookies = pm.response.headers.all().filter(h => h.key.toLowerCase() === 'set-cookie').map(h => h.value).map(c => c.split(';')[0]);", "const session = cookies.find(c => /^(?:__Host-)?liena_admin_session=/.test(c));", "const csrf = cookies.find(c => /^(?:__Host-)?liena_admin_csrf=/.test(c)) || pm.environment.get('adminCsrfCookie');", "if (session) pm.environment.set('adminSessionCookie', [session, csrf].filter(Boolean).join('; '));", "if (csrf) pm.environment.set('adminCsrfCookie', csrf);", "pm.test('Connexion admin réussie', function () { pm.response.to.have.status(200); pm.expect(pm.response.json().data.id).to.be.a('string'); });"] } }] },
+        { "name": "Admin courant", "request": { "method": "GET", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }], "url": "{{baseUrl}}/api/v1/admin/me" } },
+        { "name": "Lister demandes prestataires", "request": { "method": "GET", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }], "url": "{{baseUrl}}/api/v1/admin/provider-registrations" } },
+        { "name": "Approuver prestataire", "request": { "method": "PATCH", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/v1/admin/provider-registrations/{{providerProfileId}}/approve" } },
+        { "name": "Refuser prestataire", "request": { "method": "PATCH", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"note\":\"Dossier incomplet\"}" }, "url": "{{baseUrl}}/api/v1/admin/provider-registrations/{{providerProfileId}}/reject" } },
+        { "name": "Suspendre prestataire", "request": { "method": "PATCH", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/v1/admin/provider-registrations/{{providerProfileId}}/suspend" } },
+        { "name": "Réactiver prestataire", "request": { "method": "PATCH", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/v1/admin/provider-registrations/{{providerProfileId}}/reactivate" } },
+        { "name": "Lister utilisateurs", "request": { "method": "GET", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }], "url": "{{baseUrl}}/api/v1/admin/users?page=1&pageSize=25" } },
+        { "name": "Suspendre/réactiver utilisateur ordinaire (super-admin)", "request": { "method": "PATCH", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"status\":\"SUSPENDED\"}" }, "url": "{{baseUrl}}/api/v1/admin/users/{{userId}}/status" } },
+        { "name": "Lister catégories admin", "request": { "method": "GET", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }], "url": "{{baseUrl}}/api/v1/admin/categories" } },
+        { "name": "Créer catégorie/métier", "request": { "method": "POST", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"parentId\": \"{{rootCategoryId}}\",\n  \"name\": \"Plomberie\",\n  \"slug\": \"plomberie\",\n  \"position\": 0\n}" }, "url": "{{baseUrl}}/api/v1/admin/categories" } },
+        { "name": "Désactiver catégorie", "request": { "method": "DELETE", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}" } },
+        { "name": "Modifier catégorie", "request": { "method": "PATCH", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"position\":1,\"isActive\":true}" }, "url": "{{baseUrl}}/api/v1/admin/categories/{{categoryId}}" } },
+        { "name": "Lister signalements", "request": { "method": "GET", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }], "url": "{{baseUrl}}/api/v1/admin/reports?status=PENDING" } },
+        { "name": "Traiter signalement", "request": { "method": "PATCH", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"status\":\"RESOLVED\",\"moderatorNotes\":\"Examen effectué.\"}" }, "url": "{{baseUrl}}/api/v1/admin/reports/{{reportId}}" } },
+        { "name": "Lister invitations admin", "request": { "method": "GET", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }], "url": "{{baseUrl}}/api/v1/admin/invitations" } },
+        { "name": "Inviter un administrateur (super-admin)", "request": { "method": "POST", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"new-admin@example.test\",\"role\":\"ADMIN\"}" }, "url": "{{baseUrl}}/api/v1/admin/invitations" } },
+        { "name": "Révoquer invitation admin (super-admin)", "request": { "method": "DELETE", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/v1/admin/invitations/{{invitationId}}" } },
+        { "name": "Accepter invitation admin", "request": { "method": "POST", "header": [{ "key": "Origin", "value": "{{appOrigin}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"token\":\"{{invitationToken}}\",\"firstName\":\"New\",\"lastName\":\"Admin\",\"password\":\"{{temporaryPassword}}\"}" }, "url": "{{baseUrl}}/api/v1/admin/invitations/accept" } },
+        { "name": "Demander récupération admin", "request": { "method": "POST", "header": [{ "key": "Origin", "value": "{{appOrigin}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"email\":\"{{adminEmail}}\"}" }, "url": "{{baseUrl}}/api/v1/admin/password/forgot" } },
+        { "name": "Réinitialiser mot de passe admin", "request": { "method": "POST", "header": [{ "key": "Origin", "value": "{{appOrigin}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"token\":\"{{resetToken}}\",\"password\":\"{{temporaryPassword}}\"}" }, "url": "{{baseUrl}}/api/v1/admin/password/reset" } },
+        { "name": "Lister administrateurs", "request": { "method": "GET", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }], "url": "{{baseUrl}}/api/v1/admin/admins" } },
+        { "name": "Modifier rôle administrateur (super-admin)", "request": { "method": "PATCH", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"role\":\"ADMIN\"}" }, "url": "{{baseUrl}}/api/v1/admin/admins/{{userId}}/role" } },
+        { "name": "Retirer accès administrateur (super-admin)", "request": { "method": "DELETE", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/v1/admin/admins/{{userId}}" } },
+        { "name": "Déconnexion admin", "request": { "method": "POST", "header": [{ "key": "Cookie", "value": "{{adminSessionCookie}}" }, { "key": "x-csrf-token", "value": "{{csrfToken}}" }], "url": "{{baseUrl}}/api/v1/admin/logout" } }
       ]
     }
   ],
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:3000" },
-    { "key": "adminSessionCookie", "value": "liena_admin_session=..." }
+    { "key": "appOrigin", "value": "http://localhost:5173" },
+    { "key": "devUserId", "value": "replace-with-real-test-user-uuid" },
+    { "key": "categorySlug", "value": "plomberie" },
+    { "key": "categoryId", "value": "replace-with-active-trade-uuid" },
+    { "key": "rootCategoryId", "value": "replace-with-root-category-uuid" },
+    { "key": "providerQuery", "value": "atelier" },
+    { "key": "providerSlug", "value": "replace-with-verified-provider-slug" },
+    { "key": "providerProfileId", "value": "replace-with-provider-profile-uuid" },
+    { "key": "serviceId", "value": "replace-with-service-uuid" },
+    { "key": "serviceSlug", "value": "replace-with-service-slug" },
+    { "key": "requestId", "value": "replace-with-request-uuid" },
+    { "key": "quoteId", "value": "replace-with-quote-uuid" },
+    { "key": "missionId", "value": "replace-with-mission-uuid" },
+    { "key": "bookingId", "value": "replace-with-booking-uuid" },
+    { "key": "conversationId", "value": "replace-with-conversation-uuid" },
+    { "key": "addressId", "value": "replace-with-address-uuid" },
+    { "key": "availabilitySlotId", "value": "replace-with-slot-uuid" },
+    { "key": "availabilityExceptionId", "value": "replace-with-exception-uuid" },
+    { "key": "notificationId", "value": "replace-with-notification-uuid" },
+    { "key": "reviewId", "value": "replace-with-review-uuid" },
+    { "key": "reportId", "value": "replace-with-report-uuid" },
+    { "key": "adminEmail", "value": "admin@liena.fr" },
+    { "key": "userId", "value": "replace-with-user-uuid" },
+    { "key": "invitationId", "value": "replace-with-invitation-uuid" },
+    { "key": "adminSessionCookie", "value": "liena_admin_session=replace-me; liena_admin_csrf=replace-me" },
+    { "key": "csrfToken", "value": "replace-me" }
   ]
 }
