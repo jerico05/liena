@@ -22,6 +22,10 @@ const environmentSchema = z.object({
     (value) => (value === "" ? undefined : value),
     z.string().min(1).optional(),
   ),
+  ADMIN_BOOTSTRAP_TOKEN: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.string().min(32).optional(),
+  ),
   COOKIE_SAME_SITE: z.enum(["lax", "strict", "none"]).default("lax"),
 }).superRefine((values, context) => {
   const appUrl = new URL(values.APP_URL);

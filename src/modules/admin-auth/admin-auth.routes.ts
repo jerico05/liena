@@ -6,6 +6,8 @@ import { z } from "zod";
 import { HttpError } from "../../http/errors";
 import { validateBody, validateParams } from "../../http/middleware/validate";
 import { prisma } from "../../lib/prisma";
+import { config } from "../../config/env";
+import { AdminBootstrapService } from "./bootstrap";
 import { adminLink, escapeHtml, sendAdminEmail } from "./email";
 import {
   clearAuthCookies,
@@ -46,6 +48,7 @@ const acceptInvitationSchema = z
     password: passwordSchema,
   })
   .strict();
+const bootstrapSchema = z.object({ email: emailSchema }).strict();
 const forgotPasswordSchema = z.object({ email: emailSchema }).strict();
 const resetPasswordSchema = z
   .object({ token: z.string().min(32).max(128), password: passwordSchema })
@@ -54,11 +57,31 @@ const changeRoleSchema = z.object({ role: adminRoleSchema }).strict();
 const idParamsSchema = z.object({ id: z.string().uuid() }).strict();
 const loginLimiter = createRateLimiter(8, "Trop de tentatives de connexion. Réessayez plus tard.");
 const recoveryLimiter = createRateLimiter(4, "Trop de demandes. Réessayez plus tard.");
+const bootstrapLimiter = createRateLimiter(3, "Trop de demandes. Réessayez plus tard.");
+const adminBootstrapService = new AdminBootstrapService(prisma);
 
 export const adminAuthRouter = Router();
 adminAuthRouter.use((_request, response, next) => {
   response.setHeader("Cache-Control", "no-store");
   next();
+});
+
+adminAuthRouter.post("/bootstrap", bootstrapLimiter, validateBody(bootstrapSchema), async (request, response) => {
+  const expectedToken = config.ADMIN_BOOTSTRAP_TOKEN;
+  const suppliedToken = request.get("x-admin-bootstrap-token");
+  if (!expectedToken || !suppliedToken || !constantTimeEqual(expectedToken, suppliedToken)) {
+    throw new HttpError(404, "ROUTE_NOT_FOUND", "The requested route was not found.");
+  }
+
+  const { email } = request.body as z.output<typeof bootstrapSchema>;
+  const invitation = await adminBootstrapService.createInvitation(email);
+  response.status(201).json({
+    data: {
+      email: invitation.email,
+      expiresAt: invitation.expiresAt,
+      setupUrl: invitation.setupUrl,
+    },
+  });
 });
 
 adminAuthRouter.get("/csrf", async (request, response) => {

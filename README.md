@@ -1,5 +1,44 @@
 # Liena
 
+## Lancer l'application en local sans Docker
+
+Prérequis : Node.js 20.19+ et PostgreSQL installé et démarré. Depuis la racine du dépôt, dans PowerShell :
+
+```powershell
+# Créer la base si elle n'existe pas encore
+createdb liena_dev
+
+# Installer les dépendances et créer la configuration locale
+npm install
+Copy-Item .env.example .env
+notepad .env
+```
+
+Dans `.env`, vérifiez que `DATABASE_URL` pointe vers votre base PostgreSQL locale et que `CORS_ORIGIN` vaut `http://localhost:5173`. Puis préparez le schéma :
+
+```powershell
+npm run db:generate
+npm run db:migrate:deploy
+```
+
+Lancez l'API et l'interface dans deux terminaux PowerShell distincts, depuis la racine du dépôt :
+
+```powershell
+# Terminal 1 : API sur http://localhost:3000
+npm run dev
+```
+
+```powershell
+# Terminal 2 : interface sur http://localhost:5173
+npm run admin:dev
+```
+
+Ouvrez [http://localhost:5173](http://localhost:5173). Pour créer le premier compte administrateur local, utilisez un autre terminal :
+
+```powershell
+npm run admin:bootstrap -- votre-adresse@example.com
+```
+
 ## Lancer l'application avec Docker
 
 Prérequis : Docker Desktop avec Docker Compose v2. Depuis la racine du dépôt, dans PowerShell :

@@ -1,0 +1,17 @@
+[build]
+  command = "npm run db:generate && npm run admin:build"
+  publish = "apps/admin/dist"
+
+[build.environment]
+  DATABASE_URL = "postgresql://liena:liena@localhost:5432/liena_dev?schema=public"
+  VITE_API_URL = "/api/v1"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["@prisma/client", "@prisma/adapter-pg", "pg", "argon2"]
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
