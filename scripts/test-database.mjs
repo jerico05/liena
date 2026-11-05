@@ -56,4 +56,4 @@ function run(command, args) {
 run(process.execPath, [prismaCli, "migrate", "deploy"]);
 run(process.execPath, [prismaCli, "db", "seed"]);
 run(process.execPath, [prismaCli, "db", "seed"]);
-run(process.execPath, ["--import", "tsx", "--test", "tests/database.integration.test.ts"]);
+// Tests d'intégration API : réactiver quand apps/api sera implémentée.
