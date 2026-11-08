@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
-import { config } from "../config/env";
+import { config } from "../../config/env";
 import { deleteAdminSession } from "./admin-session.store";
-import { digestEqual } from "../utils/security-tokens";
+import { digestEqual } from "./security-tokens";
 
 const secureCookies = config.NODE_ENV === "production" || config.COOKIE_SAME_SITE === "none";
 

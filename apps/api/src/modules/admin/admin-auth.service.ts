@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
-import { config } from "../config/env";
-import { HttpError } from "../middlewares/error-handler";
-import { createOpaqueToken, hashToken } from "../utils/security-tokens";
+import { config } from "../../config/env";
+import { HttpError } from "../../middlewares/errorHandler";
+import { createOpaqueToken, hashToken } from "./security-tokens";
 import { createAdminSession, replaceSessionCsrf } from "./admin-session.store";
 import {
   clearAuthCookies,
@@ -13,7 +13,7 @@ import {
   setSessionCookie,
   csrfCookieName,
 } from "./admin-auth.security";
-import type { AdminLoginInput } from "../validators/admin-auth.validator";
+import type { AdminLoginInput } from "./admin-auth.validator";
 import { findAdminSession } from "./admin-session.store";
 
 const sessionTtlMs = 12 * 60 * 60 * 1000;

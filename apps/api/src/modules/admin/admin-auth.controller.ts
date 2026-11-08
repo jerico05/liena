@@ -5,8 +5,8 @@ import {
   loginAdmin,
   logoutAdmin,
   refreshCsrfForSession,
-} from "../services/admin-auth.service";
-import type { AdminLoginInput } from "../validators/admin-auth.validator";
+} from "./admin-auth.service";
+import type { AdminLoginInput } from "./admin-auth.validator";
 
 export const getCsrf: RequestHandler = (_request, response) => {
   const csrfToken = issueCsrfToken(response);

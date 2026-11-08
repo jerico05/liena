@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { listMockProviders, reviewMockProvider, resetMockProviders } from "../src/services/admin-provider.mock-store";
+import {
+  listMockProviders,
+  reviewMockProvider,
+  resetMockProviders,
+} from "../src/modules/admin/admin-provider.mock-store";
 
 describe("admin provider mock store", () => {
   test("lists seeded providers with summary and pagination", () => {

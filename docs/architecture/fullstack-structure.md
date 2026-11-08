@@ -49,17 +49,12 @@ liena
 │   │
 │   ├── api/                      # Backend Express
 │   │   ├── src/
-│   │   │   ├── config/
-│   │   │   ├── routes/
-│   │   │   ├── controllers/
-│   │   │   ├── services/
-│   │   │   ├── models/
-│   │   │   ├── repositories/
-│   │   │   ├── middlewares/
-│   │   │   ├── validators/
-│   │   │   ├── utils/
-│   │   │   ├── app.js
-│   │   │   └── server.js
+│   │   │   ├── config/             # env, database, yeria
+│   │   │   ├── middlewares/        # errorHandler, auth partagés…
+│   │   │   ├── modules/            # domaines (admin + squelettes)
+│   │   │   ├── types/
+│   │   │   ├── app.ts
+│   │   │   └── server.ts
 │   │   ├── tests/
 │   │   ├── .env.example
 │   │   └── package.json
@@ -115,6 +110,8 @@ liena
 | Élément | Raison |
 | -------- | ------ |
 | `apps/api/src/app.ts` / `server.ts` | TypeScript (équivalent `app.js` / `server.js`) |
+| `apps/api/src/modules/*` | Un dossier par domaine (`*.routes.ts`, service, repository…) |
+| `apps/api/src/modules/admin/` | Console admin (seul module implémenté à ce stade) |
 | `apps/api/src/types/` | Extensions Express (`express.d.ts`) |
 | `.env` à la racine | Une seule config pour Prisma et l’API |
 | `apps/admin/src/lib/` | Client API existant ; migration vers `services/` possible plus tard |
@@ -125,7 +122,8 @@ Remarque : le contenu exact de `mobile/` dépendra du mode d'intégration Yeria 
 
 ### État actuel du dépôt (squelette)
 
-- **`apps/api`** et **`apps/mobile`** : uniquement les dossiers (fichiers `.gitkeep`). Pas de `app.ts` / `server.ts` / `index.ts` tant que l’implémentation n’a pas démarré.
+- **`apps/api`** : noyau Express + module **admin** ; modules `categories`, `providers`, `clients`, `service-requests` en squelette (`.gitkeep`).
+- **`apps/mobile`** : squelette (dossiers vides).
 - **`apps/admin`** : code existant ; dossiers cibles `features/`, `hooks/`, `services/`, etc. créés vides pour migration future.
 - **`packages/shared-*`** : packages vides prêts à recevoir types et schémas Zod partagés.
 
@@ -137,15 +135,10 @@ Le backend doit suivre une architecture en couches :
 
 | Dossier         | Rôle                                                                 |
 | --------------- | -------------------------------------------------------------------- |
-| `config/`       | Configuration de la base de données et des variables d'environnement |
-| `routes/`       | Déclaration des endpoints                                            |
-| `controllers/`  | Réception et traitement des requêtes HTTP                            |
-| `services/`     | Logique métier                                                       |
-| `repositories/` | Communication avec la base de données                                |
-| `models/`       | Définition des entités et modèles                                    |
-| `middlewares/`  | Authentification, autorisation et gestion des erreurs                |
-| `validators/`   | Validation des données reçues                                        |
-| `utils/`        | Fonctions utilitaires                                                |
+| `config/`       | Variables d'environnement, Prisma (`database`), Yeria                |
+| `middlewares/`  | Erreurs, validation HTTP, auth/authorize partagés                     |
+| `modules/<domaine>/` | Routes, controllers, services, repositories par domaine        |
+| `types/`        | Extensions TypeScript (Express)                                       |
 
 Exemple de fonctionnement :
 

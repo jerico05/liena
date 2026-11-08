@@ -1,4 +1,4 @@
-import { HttpError } from "../middlewares/error-handler";
+import { HttpError } from "../../middlewares/errorHandler";
 
 export type ProviderStatus = "PENDING" | "VERIFIED" | "REJECTED" | "SUSPENDED";
 export type AccountStatus = "ACTIVE" | "SUSPENDED" | "DELETED";

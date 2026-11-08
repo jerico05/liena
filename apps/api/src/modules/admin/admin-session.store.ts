@@ -1,4 +1,4 @@
-import { createOpaqueToken, hashToken } from "../utils/security-tokens";
+import { createOpaqueToken, hashToken } from "./security-tokens";
 
 const maxSessions = 50;
 

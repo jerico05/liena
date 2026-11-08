@@ -1,8 +1,8 @@
-import { config } from "../config/env";
-import { HttpError } from "../middlewares/error-handler";
-import { withAdminMockMeta } from "../utils/admin-api-meta";
-import type { ProviderListQuery, ProviderReviewInput } from "../validators/admin-provider.validator";
-import * as repository from "../repositories/admin-provider.repository";
+import { config } from "../../config/env";
+import { HttpError } from "../../middlewares/errorHandler";
+import { withAdminMockMeta } from "./admin-api-meta";
+import type { ProviderListQuery, ProviderReviewInput } from "./admin-provider.validator";
+import * as repository from "./admin-provider.repository";
 import {
   getMockProvider,
   listMockProviders,

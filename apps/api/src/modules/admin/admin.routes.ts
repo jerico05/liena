@@ -1,20 +1,20 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { getCsrf, getMe, postLogin, postLogout } from "../controllers/admin-auth.controller";
-import { getDashboard } from "../controllers/admin-dashboard.controller";
+import { getCsrf, getMe, postLogin, postLogout } from "./admin-auth.controller";
+import { getDashboard } from "./admin-dashboard.controller";
 import {
   getProvider,
   listProviders,
   reviewProvider,
-} from "../controllers/admin-provider.controller";
-import { requireAdmin, requireCsrf } from "../middlewares/admin-auth.middleware";
-import { validateBody, validateParams, validateQuery } from "../middlewares/validate-request";
-import { adminLoginSchema } from "../validators/admin-auth.validator";
+} from "./admin-provider.controller";
+import { requireAdmin, requireCsrf } from "./admin-auth.middleware";
+import { validateBody, validateParams, validateQuery } from "../../middlewares/validateRequest";
+import { adminLoginSchema } from "./admin-auth.validator";
 import {
   providerIdParamsSchema,
   providerListQuerySchema,
   providerReviewSchema,
-} from "../validators/admin-provider.validator";
+} from "./admin-provider.validator";
 
 const loginRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
