@@ -1,21 +1,21 @@
 # @liena/api
 
-Structure Express **sans implémentation** — référence : [fullstack-structure.md](../../docs/architecture/fullstack-structure.md).
+Backend Express (TypeScript). Référence : [fullstack-structure.md](../../docs/architecture/fullstack-structure.md).
+
+## Structure `src/`
 
 ```
-src/
-  config/
-  routes/
-  controllers/
-  services/
-  models/
-  repositories/
-  middlewares/
-  validators/
-  utils/
-  app.ts          ← à créer
-  server.ts       ← à créer
-tests/
+config/           env, database (Prisma), yeria (mobile)
+middlewares/      errorHandler, requestId, validateRequest, authenticate, authorize
+modules/
+  admin/          Console admin (implémenté)
+  categories/     squelette
+  providers/      squelette
+  clients/        squelette
+  service-requests/ squelette
+types/            express.d.ts
+app.ts
+server.ts
 ```
 
 Variables d’environnement : `.env` à la **racine** du monorepo (`.env.example`).

@@ -2,9 +2,9 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import { config } from "./config/env";
-import { errorHandler } from "./middlewares/error-handler";
-import { requestIdMiddleware } from "./middlewares/request-id";
-import { adminRouter } from "./routes/admin.routes";
+import { errorHandler } from "./middlewares/errorHandler";
+import { requestIdMiddleware } from "./middlewares/requestId";
+import { adminRouter } from "./modules/admin/admin.routes";
 
 const adminNoCache: express.RequestHandler = (_request, response, next) => {
   response.setHeader("Cache-Control", "no-store");

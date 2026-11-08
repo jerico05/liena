@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { getAdminDashboard } from "../services/admin-dashboard.service";
+import { getAdminDashboard } from "./admin-dashboard.service";
 
 export const getDashboard: RequestHandler = async (_request, response, next) => {
   try {

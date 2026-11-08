@@ -1,5 +1,5 @@
 import { Prisma, ProviderStatus } from "@prisma/client";
-import { prisma } from "./prisma.client";
+import { prisma } from "../../config/database";
 
 const listSelect = {
   id: true,

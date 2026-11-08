@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { parseEnvironment } from "../src/config/env";
-import { credentialsMatch } from "../src/services/admin-auth.security";
-import { digestEqual } from "../src/utils/security-tokens";
+import { credentialsMatch } from "../src/modules/admin/admin-auth.security";
+import { digestEqual } from "../src/modules/admin/security-tokens";
 
 describe("admin auth configuration", () => {
   test("parseEnvironment applies mock defaults in development", () => {

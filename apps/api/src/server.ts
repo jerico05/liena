@@ -1,6 +1,6 @@
 import { createApp } from "./app";
 import { config } from "./config/env";
-import { disconnectDatabase } from "./repositories/prisma.client";
+import { disconnectDatabase } from "./config/database";
 
 const app = createApp();
 

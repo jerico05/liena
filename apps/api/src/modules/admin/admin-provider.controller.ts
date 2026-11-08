@@ -3,8 +3,8 @@ import {
   getAdminProviderDetail,
   listAdminProviders,
   reviewAdminProvider,
-} from "../services/admin-provider.service";
-import type { ProviderListQuery, ProviderReviewInput } from "../validators/admin-provider.validator";
+} from "./admin-provider.service";
+import type { ProviderListQuery, ProviderReviewInput } from "./admin-provider.validator";
 
 export const listProviders: RequestHandler = async (request, response, next) => {
   try {
