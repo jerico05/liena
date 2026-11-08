@@ -14,7 +14,7 @@ async function summaryFromDatabase() {
   const rows = await repository.countProvidersByStatus();
   return {
     pending: rows.PENDING,
-    verified: rows.VERIFIED,
+    verified: rows.APPROVED + rows.VERIFIED,
     rejected: rows.REJECTED,
     suspended: rows.SUSPENDED,
   };

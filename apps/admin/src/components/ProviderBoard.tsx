@@ -102,7 +102,7 @@ export function ProviderBoard({
             label: "Vérifiés",
             value: summary.verified,
             icon: <IconUsers />,
-            onClick: () => chooseStatus("VERIFIED"),
+            onClick: () => chooseStatus("APPROVED"),
           },
           {
             id: "pending",
@@ -146,7 +146,8 @@ export function ProviderBoard({
               >
                 <option value="ALL">Tous les statuts</option>
                 <option value="PENDING">En attente de validation</option>
-                <option value="VERIFIED">Vérifiés</option>
+                <option value="APPROVED">Approuvés</option>
+                <option value="VERIFIED">Vérifiés (historique)</option>
                 <option value="REJECTED">Refusés</option>
                 <option value="SUSPENDED">Suspendus</option>
               </select>

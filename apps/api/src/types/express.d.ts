@@ -4,6 +4,14 @@ declare global {
       validatedBody?: unknown;
       validatedQuery?: unknown;
       validatedParams?: unknown;
+      user?: {
+        yeriaSub: string;
+        audience: string;
+        issuer: string;
+        expiresAt: number;
+        issuedAt?: number;
+        keyId?: string;
+      };
     }
 
     interface Locals {

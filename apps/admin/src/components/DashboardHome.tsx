@@ -83,7 +83,7 @@ export function DashboardHome({
             label: "Profils vérifiés",
             value: summary.verified,
             icon: <IconUsers />,
-            onClick: () => onOpenStatus("VERIFIED"),
+            onClick: () => onOpenStatus("APPROVED"),
           },
           {
             id: "pending",

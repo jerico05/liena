@@ -2,6 +2,7 @@ import type { AccountStatus, PricingType, ProviderStatus, ServiceStatus } from "
 
 const providerStatusLabels: Record<ProviderStatus, string> = {
   PENDING: "En attente",
+  APPROVED: "Approuvé",
   VERIFIED: "Vérifié",
   REJECTED: "Refusé",
   SUSPENDED: "Suspendu",

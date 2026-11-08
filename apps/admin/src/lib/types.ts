@@ -1,4 +1,4 @@
-export type ProviderStatus = "PENDING" | "VERIFIED" | "REJECTED" | "SUSPENDED";
+export type ProviderStatus = "PENDING" | "APPROVED" | "VERIFIED" | "REJECTED" | "SUSPENDED";
 export type AccountStatus = "ACTIVE" | "SUSPENDED" | "DELETED";
 export type ServiceStatus = "DRAFT" | "PUBLISHED" | "PAUSED" | "ARCHIVED";
 export type PricingType = "FIXED" | "HOURLY" | "DAILY" | "QUOTE";

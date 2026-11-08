@@ -265,7 +265,7 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
           )}
           {!canReview && (
             <p className="provider-decision-text">
-              {provider.status === "VERIFIED" && `Profil validé le ${formatDate(provider.verifiedAt)}.`}
+              {(provider.status === "APPROVED" || provider.status === "VERIFIED") && `Profil validé le ${formatDate(provider.verifiedAt)}.`}
               {provider.status === "REJECTED" && "Cette demande a été refusée."}
               {provider.status === "SUSPENDED" && "Profil suspendu : la validation ne s’applique pas ici."}
             </p>

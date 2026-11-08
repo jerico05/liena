@@ -16,6 +16,7 @@
     { "key": "rootCategoryId", "value": "replace-with-root-category-uuid", "enabled": true },
     { "key": "locationZoneId", "value": "replace-with-active-location-zone-uuid", "enabled": true },
     { "key": "providerProfileId", "value": "replace-with-provider-profile-uuid", "enabled": true },
+    { "key": "yeriaToken", "value": "replace-with-a-real-yeria-jwt", "enabled": true },
     { "key": "providerSlug", "value": "replace-with-verified-provider-slug", "enabled": true },
     { "key": "serviceId", "value": "replace-with-service-uuid", "enabled": true },
     { "key": "requestId", "value": "replace-with-request-uuid", "enabled": true },

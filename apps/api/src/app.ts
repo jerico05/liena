@@ -1,17 +1,20 @@
 import cors from "cors";
 import express from "express";
+import type { RequestHandler } from "express";
 import helmet from "helmet";
 import { config } from "./config/env";
 import { errorHandler } from "./middlewares/errorHandler";
 import { requestIdMiddleware } from "./middlewares/requestId";
 import { adminRouter } from "./modules/admin/admin.routes";
+import { createUserRouter } from "./modules/user/user.routes";
+import { createProviderRequestsRouter, createRequestsRouter } from "./modules/requests/requests.routes";
 
 const adminNoCache: express.RequestHandler = (_request, response, next) => {
   response.setHeader("Cache-Control", "no-store");
   next();
 };
 
-export function createApp() {
+export function createApp(options: { userAuthenticate?: RequestHandler } = {}) {
   const app = express();
 
   app.set("trust proxy", config.TRUST_PROXY_HOPS);
@@ -39,6 +42,9 @@ export function createApp() {
   });
 
   app.use("/api/v1/admin", adminNoCache, adminRouter);
+  app.use("/api/v1/providers/requests", createProviderRequestsRouter(options.userAuthenticate));
+  app.use("/api/v1/requests", createRequestsRouter(options.userAuthenticate));
+  app.use("/api/v1", createUserRouter(options.userAuthenticate));
   app.use(errorHandler);
 
   return app;

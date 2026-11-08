@@ -57,6 +57,9 @@
     {
       "name": "Prestataires et services",
       "item": [
+        { "name": "MVP - lister prestataires approuvés", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/providers?q={{providerQuery}}&city={{city}}&categoryId={{categoryId}}&page=1&pageSize=20" } },
+        { "name": "MVP - créer profil avec Yeria", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{yeriaToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"businessName\": \"Atelier de démonstration\",\n  \"description\": \"Prestations artisanales sur rendez-vous.\",\n  \"city\": \"Lomé\",\n  \"countryCode\": \"TG\"\n}" }, "url": "{{baseUrl}}/api/v1/providers/profile" } },
+        { "name": "MVP - mon profil Yeria", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{yeriaToken}}" }], "url": "{{baseUrl}}/api/v1/providers/profile/me" } },
         { "name": "Rechercher prestataires", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/providers/search?q={{providerQuery}}&city={{city}}&categoryId={{categoryId}}&minRating=0&page=1&pageSize=20" } },
         { "name": "Profil prestataire public", "request": { "method": "GET", "url": "{{baseUrl}}/api/v1/providers/{{providerSlug}}" } },
         { "name": "Mon profil prestataire", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/providers/me/profile" } },
@@ -83,6 +86,12 @@
     {
       "name": "Demandes",
       "item": [
+        { "name": "MVP - créer une demande Yeria", "request": { "method": "POST", "header": [{ "key": "Authorization", "value": "Bearer {{yeriaToken}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"providerProfileId\": \"{{providerProfileId}}\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"title\": \"Réparer une fuite\",\n  \"description\": \"Fuite sous évier, merci de proposer un devis détaillé.\",\n  \"city\": \"Lomé\"\n}" }, "url": "{{baseUrl}}/api/v1/requests" } },
+        { "name": "MVP - mes demandes Yeria", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{yeriaToken}}" }], "url": "{{baseUrl}}/api/v1/requests/my-requests" } },
+        { "name": "MVP - demandes reçues prestataire", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{yeriaToken}}" }], "url": "{{baseUrl}}/api/v1/providers/requests" } },
+        { "name": "MVP - accepter demande reçue", "request": { "method": "PATCH", "header": [{ "key": "Authorization", "value": "Bearer {{yeriaToken}}" }], "url": "{{baseUrl}}/api/v1/providers/requests/{{requestId}}/accept" } },
+        { "name": "MVP - refuser demande reçue", "request": { "method": "PATCH", "header": [{ "key": "Authorization", "value": "Bearer {{yeriaToken}}" }], "url": "{{baseUrl}}/api/v1/providers/requests/{{requestId}}/decline" } },
+        { "name": "MVP - terminer demande reçue", "request": { "method": "PATCH", "header": [{ "key": "Authorization", "value": "Bearer {{yeriaToken}}" }], "url": "{{baseUrl}}/api/v1/providers/requests/{{requestId}}/complete" } },
         { "name": "Lister mes demandes", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/requests" } },
         { "name": "Demandes accessibles au prestataire", "request": { "method": "GET", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }], "url": "{{baseUrl}}/api/v1/requests/available" } },
         { "name": "Créer une demande", "request": { "method": "POST", "header": [{ "key": "x-user-id", "value": "{{devUserId}}" }, { "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"title\": \"Réparer une fuite\",\n  \"description\": \"Fuite sous évier, merci de proposer un devis détaillé.\",\n  \"city\": \"Lomé\",\n  \"neighborhood\": \"Tokoin\"\n}" }, "url": "{{baseUrl}}/api/v1/requests" } },

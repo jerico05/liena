@@ -1,6 +1,6 @@
 import { HttpError } from "../../middlewares/errorHandler";
 
-export type ProviderStatus = "PENDING" | "VERIFIED" | "REJECTED" | "SUSPENDED";
+export type ProviderStatus = "PENDING" | "APPROVED" | "VERIFIED" | "REJECTED" | "SUSPENDED";
 export type AccountStatus = "ACTIVE" | "SUSPENDED" | "DELETED";
 export type ServiceStatus = "DRAFT" | "PUBLISHED" | "PAUSED" | "ARCHIVED";
 export type PricingType = "FIXED" | "HOURLY" | "DAILY" | "QUOTE";
@@ -274,7 +274,7 @@ function buildSeedProviders(): MockProviderRecord[] {
       id: "prov-mock-003",
       businessName: "Électricité Lomé Pro",
       slug: "electricite-lome-pro",
-      status: "VERIFIED",
+      status: "APPROVED",
       city: LOCALE_CITY,
       neighborhood: "Adidogomé",
       countryCode: LOCALE_COUNTRY,
@@ -338,7 +338,7 @@ function buildSeedProviders(): MockProviderRecord[] {
       id: "prov-mock-004",
       businessName: "Mawuli Ménage & Repassage",
       slug: "mawuli-menage-repassage",
-      status: "VERIFIED",
+      status: "APPROVED",
       city: LOCALE_CITY,
       neighborhood: "Agoè",
       countryCode: LOCALE_COUNTRY,
@@ -568,7 +568,7 @@ export function computeMockProviderSummary(records: MockProviderRecord[] = provi
   return records.reduce<ProviderSummary>(
     (summary, record) => {
       if (record.status === "PENDING") summary.pending += 1;
-      if (record.status === "VERIFIED") summary.verified += 1;
+      if (record.status === "APPROVED" || record.status === "VERIFIED") summary.verified += 1;
       if (record.status === "REJECTED") summary.rejected += 1;
       if (record.status === "SUSPENDED") summary.suspended += 1;
       return summary;
@@ -655,7 +655,7 @@ export function reviewMockProvider(
   record.updatedAt = now;
 
   if (decision === "VERIFY") {
-    record.status = "VERIFIED";
+    record.status = "APPROVED";
     record.verifiedAt = now;
     record.verificationNotes = trimmedNotes || record.verificationNotes;
   } else {
@@ -687,7 +687,7 @@ export function getMockDashboard(): DashboardData {
     .map(toDashboardCard);
 
   const recentDecisions = providers
-    .filter((record) => record.status === "VERIFIED" || record.status === "REJECTED")
+    .filter((record) => record.status === "APPROVED" || record.status === "VERIFIED" || record.status === "REJECTED")
     .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))
     .slice(0, 8)
     .map(toDashboardCard);

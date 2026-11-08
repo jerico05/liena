@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const providerStatusSchema = z.enum(["PENDING", "VERIFIED", "REJECTED", "SUSPENDED"]);
+export const providerStatusSchema = z.enum(["PENDING", "APPROVED", "VERIFIED", "REJECTED", "SUSPENDED"]);
 
 export const providerListQuerySchema = z
   .object({

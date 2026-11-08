@@ -26,6 +26,7 @@ enum UserStatus {
 enum ProviderStatus {
   PENDING
   VERIFIED
+  APPROVED
   REJECTED
   SUSPENDED
 
@@ -108,6 +109,16 @@ enum ReviewStatus {
   @@map("review_status")
 }
 
+enum ServiceRequestStatus {
+  OPEN
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  COMPLETED
+
+  @@map("service_request_status")
+}
+
 model User {
   id              String     @id @default(uuid()) @db.Uuid
   firstName       String     @map("first_name")
@@ -126,6 +137,7 @@ model User {
   updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   providerProfile         ProviderProfile?
+  serviceRequests         ServiceRequest[]
   addresses               Address[]
   clientBookings          Booking[]                 @relation("BookingClient")
   conversationMemberships ConversationParticipant[]
@@ -142,6 +154,7 @@ model User {
   adminSessions           AdminSession[]
   adminInvitationsSent    AdminInvitation[]         @relation("AdminInvitationSender")
   passwordResetTokens     AdminPasswordReset[]
+  requestEvents           RequestEvent[]
 
   @@index([status, createdAt])
   @@index([lastName, firstName])
@@ -150,7 +163,9 @@ model User {
 
 model ProviderProfile {
   id                String         @id @default(uuid()) @db.Uuid
-  userId            String         @unique @map("user_id") @db.Uuid
+  userId            String?        @unique @map("user_id") @db.Uuid
+  yeriaSub          String?        @unique @map("yeria_sub")
+  professionCategoryId String?     @map("profession_category_id") @db.Uuid
   businessName      String         @map("business_name")
   slug              String         @unique
   description       String?        @db.Text
@@ -164,7 +179,8 @@ model ProviderProfile {
   createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  user                   User                    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user                   User?                   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  professionCategory    Category?               @relation(fields: [professionCategoryId], references: [id], onDelete: Restrict)
   services               Service[]
   availabilitySlots      AvailabilitySlot[]
   availabilityExceptions AvailabilityException[]
@@ -172,6 +188,7 @@ model ProviderProfile {
   conversations          Conversation[]
   reviews                Review[]
   favorites              Favorite[]
+  receivedRequests       ServiceRequest[]
 
   @@index([status, countryCode, city, neighborhood])
   @@map("provider_profiles")
@@ -217,9 +234,59 @@ model Category {
   parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
   children Category[] @relation("CategoryHierarchy")
   services Service[]
+  providerProfiles ProviderProfile[]
+  serviceRequests ServiceRequest[]
 
   @@index([parentId, isActive, position])
   @@map("categories")
+}
+
+model ServiceRequest {
+  id                String               @id @default(uuid()) @db.Uuid
+  reference         String               @unique
+  clientId          String?              @map("client_id") @db.Uuid
+  clientYeriaSub    String?              @map("client_yeria_sub")
+  providerProfileId String?              @map("provider_profile_id") @db.Uuid
+  categoryId        String               @map("category_id") @db.Uuid
+  locationZoneId    String?              @map("location_zone_id") @db.Uuid
+  title             String
+  description       String               @db.Text
+  countryCode       String               @default("TG") @map("country_code") @db.Char(2)
+  city              String
+  neighborhood      String?
+  requestedStartsAt DateTime?            @map("requested_starts_at") @db.Timestamptz(3)
+  status            ServiceRequestStatus @default(OPEN)
+  acceptedQuoteId   String?              @unique @map("accepted_quote_id") @db.Uuid
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  legacyClient    User?            @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  providerProfile ProviderProfile? @relation(fields: [providerProfileId], references: [id], onDelete: Restrict)
+  category       Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  events         RequestEvent[]
+
+  @@index([clientYeriaSub, status, createdAt])
+  @@index([providerProfileId, status, createdAt])
+  @@index([categoryId, status, city, createdAt])
+  @@map("service_requests")
+}
+
+model RequestEvent {
+  id             String               @id @default(uuid()) @db.Uuid
+  requestId      String               @map("request_id") @db.Uuid
+  fromStatus     ServiceRequestStatus? @map("from_status")
+  toStatus       ServiceRequestStatus @map("to_status")
+  actorYeriaSub  String?              @map("actor_yeria_sub")
+  actorUserId    String?              @map("actor_user_id") @db.Uuid
+  note           String?              @db.Text
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  request     ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  actorUser   User?          @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([requestId, createdAt])
+  @@index([actorYeriaSub, createdAt])
+  @@map("request_events")
 }
 
 model Service {

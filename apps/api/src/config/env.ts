@@ -36,6 +36,11 @@ const environmentSchema = z
       if (value === "false" || value === "0") return false;
       return value;
     }, z.boolean().optional()),
+    YERIA_BASE_URL: z.string().url().default("https://yeria.app"),
+    YERIA_APP_ID: z.string().trim().min(1).optional(),
+    YERIA_SERVICE_ID: z.string().trim().min(1).optional(),
+    SERVICE_ED25519_PRIVATE_KEY: z.string().trim().min(1).optional(),
+    YERIA_DEV_KEY_ID: z.string().trim().min(1).optional(),
   })
   .superRefine((values, context) => {
     if (values.NODE_ENV === "production" && values.ADMIN_MOCK_DATA) {

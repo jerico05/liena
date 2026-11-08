@@ -35,13 +35,15 @@ function mapListItem(row: Prisma.ProviderProfileGetPayload<{ select: typeof list
     createdAt: row.createdAt.toISOString(),
     verifiedAt: row.verifiedAt?.toISOString() ?? null,
     serviceCount: row._count.services,
-    contact: {
-      firstName: row.user.firstName,
-      lastName: row.user.lastName,
-      email: row.user.email,
-      phone: row.user.phone,
-      accountStatus: row.user.status,
-    },
+    contact: row.user
+      ? {
+          firstName: row.user.firstName,
+          lastName: row.user.lastName,
+          email: row.user.email,
+          phone: row.user.phone,
+          accountStatus: row.user.status,
+        }
+      : { firstName: "", lastName: "", email: "", phone: null, accountStatus: "ACTIVE" as const },
   };
 }
 
@@ -50,7 +52,7 @@ export async function countProvidersByStatus(): Promise<Record<ProviderStatus, n
     by: ["status"],
     _count: { _all: true },
   });
-  const summary = { PENDING: 0, VERIFIED: 0, REJECTED: 0, SUSPENDED: 0 };
+  const summary = { PENDING: 0, APPROVED: 0, VERIFIED: 0, REJECTED: 0, SUSPENDED: 0 };
   for (const row of grouped) summary[row.status] = row._count._all;
   return summary;
 }
@@ -129,7 +131,8 @@ export async function getProviderDetail(id: string) {
 
   if (!profile) return null;
 
-  const addresses = await prisma.address.findMany({
+  const addresses = profile.userId
+    ? await prisma.address.findMany({
     where: { userId: profile.userId },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
     select: {
@@ -143,7 +146,8 @@ export async function getProviderDetail(id: string) {
       latitude: true,
       longitude: true,
     },
-  });
+  })
+    : [];
 
   return {
     id: profile.id,
@@ -161,17 +165,29 @@ export async function getProviderDetail(id: string) {
     timeZone: profile.timeZone,
     serviceCount: profile._count.services,
     reviewCount: profile._count.reviews,
-    contact: {
-      firstName: profile.user.firstName,
-      lastName: profile.user.lastName,
-      email: profile.user.email,
-      phone: profile.user.phone,
-      accountStatus: profile.user.status,
-      avatarUrl: profile.user.avatarUrl,
-      emailVerifiedAt: profile.user.emailVerifiedAt?.toISOString() ?? null,
-      phoneVerifiedAt: profile.user.phoneVerifiedAt?.toISOString() ?? null,
-      createdAt: profile.user.createdAt.toISOString(),
-    },
+    contact: profile.user
+      ? {
+          firstName: profile.user.firstName,
+          lastName: profile.user.lastName,
+          email: profile.user.email,
+          phone: profile.user.phone,
+          accountStatus: profile.user.status,
+          avatarUrl: profile.user.avatarUrl,
+          emailVerifiedAt: profile.user.emailVerifiedAt?.toISOString() ?? null,
+          phoneVerifiedAt: profile.user.phoneVerifiedAt?.toISOString() ?? null,
+          createdAt: profile.user.createdAt.toISOString(),
+        }
+      : {
+          firstName: "",
+          lastName: "",
+          email: "",
+          phone: null,
+          accountStatus: "ACTIVE" as const,
+          avatarUrl: null,
+          emailVerifiedAt: null,
+          phoneVerifiedAt: null,
+          createdAt: null,
+        },
     services: profile.services.map((service) => ({
       id: service.id,
       title: service.title,
@@ -212,7 +228,7 @@ export async function reviewProvider(input: {
   const updated = await prisma.providerProfile.update({
     where: { id: input.id },
     data: {
-      status: input.decision === "VERIFY" ? ProviderStatus.VERIFIED : ProviderStatus.REJECTED,
+      status: input.decision === "VERIFY" ? ProviderStatus.APPROVED : ProviderStatus.REJECTED,
       verificationNotes: input.notes ?? null,
       verifiedAt: input.decision === "VERIFY" ? new Date() : null,
     },
@@ -259,7 +275,7 @@ function mapCard(row: Prisma.ProviderProfileGetPayload<{ select: typeof cardSele
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     verifiedAt: row.verifiedAt?.toISOString() ?? null,
-    contact: { firstName: row.user.firstName, lastName: row.user.lastName },
+    contact: row.user ? { firstName: row.user.firstName, lastName: row.user.lastName } : { firstName: "", lastName: "" },
   };
 }
 
@@ -272,7 +288,7 @@ export async function getDashboardData() {
   const summaryRows = await countProvidersByStatus();
   const summary = {
     pending: summaryRows.PENDING,
-    verified: summaryRows.VERIFIED,
+    verified: summaryRows.APPROVED + summaryRows.VERIFIED,
     rejected: summaryRows.REJECTED,
     suspended: summaryRows.SUSPENDED,
   };
@@ -290,7 +306,7 @@ export async function getDashboardData() {
         select: cardSelect,
       }),
       prisma.providerProfile.findMany({
-        where: { status: { in: [ProviderStatus.VERIFIED, ProviderStatus.REJECTED] } },
+        where: { status: { in: [ProviderStatus.APPROVED, ProviderStatus.VERIFIED, ProviderStatus.REJECTED] } },
         orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
         take: 8,
         select: cardSelect,
