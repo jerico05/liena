@@ -5,6 +5,11 @@ import { z } from "zod";
 const repositoryRoot = path.resolve(__dirname, "../../../..");
 dotenv.config({ path: path.join(repositoryRoot, ".env") });
 
+const optionalTrimmedString = z.preprocess(
+  (value) => (value === "" ? undefined : value),
+  z.string().trim().min(1).optional(),
+);
+
 const environmentSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -36,6 +41,11 @@ const environmentSchema = z
       if (value === "false" || value === "0") return false;
       return value;
     }, z.boolean().optional()),
+    YERIA_BASE_URL: z.string().url().default("https://yeria.app"),
+    YERIA_APP_ID: optionalTrimmedString,
+    YERIA_SERVICE_ID: optionalTrimmedString,
+    SERVICE_ED25519_PRIVATE_KEY: optionalTrimmedString,
+    YERIA_DEV_KEY_ID: optionalTrimmedString,
   })
   .superRefine((values, context) => {
     if (values.NODE_ENV === "production" && values.ADMIN_MOCK_DATA) {

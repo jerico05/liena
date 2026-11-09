@@ -21,6 +21,6 @@ describe("admin provider mock store", () => {
     const target = pending.data[0];
     assert.ok(target);
     const updated = reviewMockProvider(target.id, "VERIFY", "OK");
-    assert.equal(updated.status, "VERIFIED");
+    assert.equal(updated.status, "APPROVED");
   });
 });

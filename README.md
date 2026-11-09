@@ -40,6 +40,14 @@ Ouvre <http://localhost:5173> et connecte-toi avec `ADMIN_USERNAME` et `ADMIN_PA
 
 Avant toute migration distante, vérifie la branche Neon sélectionnée. Les migrations sont d’abord validées en développement; aucune migration de production n’est automatique.
 
+## API Yeria
+
+L’API expose les catégories et profils actifs, ainsi que les routes de profil prestataire et de demandes client/prestataire. Les routes personnelles exigent un jeton Bearer Yeria; le `sub` vérifié sert d’identité et n’est jamais accepté depuis le corps de la requête.
+
+Pour activer l’authentification réelle, configure `YERIA_APP_ID` et `YERIA_SERVICE_ID` dans `.env`. `YERIA_BASE_URL` utilise par défaut `https://yeria.app`; `YERIA_DEV_KEY_ID` et `SERVICE_ED25519_PRIVATE_KEY` sont optionnels et ne doivent pas être partagés ni commités. Sans identifiants Yeria, les routes protégées répondent avec une erreur de configuration au lieu d’accepter une identité non vérifiée.
+
+Les nouveaux profils sont créés en `DRAFT`, puis soumis à la modération pour passer à `PENDING`. Le parcours utilise les catégories, statuts et identifiants entiers du schéma Jyoss; il n’ajoute pas de migration.
+
 ## Netlify
 
 Netlify publie l’interface d’administration et route `/api/*` vers une Function qui charge l’application `apps/api`. Configure les variables d’environnement côté Netlify : `DATABASE_URL` (URL poolée Neon), `ADMIN_USERNAME`, `ADMIN_PASSWORD` (au moins 12 caractères en production), ainsi que les valeurs de messagerie si elles sont utilisées. `DATABASE_URL_UNPOOLED` sert uniquement aux opérations Prisma et ne doit pas être exposée au client.
