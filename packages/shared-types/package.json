@@ -1,0 +1,8 @@
+{
+  "name": "@liena/shared-types",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Types TypeScript partagés (API, admin, mobile)",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts"
+}

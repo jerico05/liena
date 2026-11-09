@@ -1,80 +1,77 @@
-# Liena — API et socle de données
+# Liena
 
-Ce projet contient l'API REST Express et l'interface d'administration React de Liena, le modèle PostgreSQL, les migrations Prisma, le seed du catalogue et les tests.
+Liena est un monorepo pour l’API Express, la console d’administration et l’application mobile Yeria.
 
-## Prérequis
+| App | État |
+|---|---|
+| `apps/api` | API Express avec authentification locale de l’administration et accès Prisma |
+| `apps/admin` | Console React de supervision et modération des prestataires |
+| `apps/mobile` | Squelette d’intégration Yeria |
+| `prisma` | Modèle MVP PostgreSQL et migrations |
 
-- Node.js 20.19+, 22.12+ ou 24+
-- PostgreSQL 14+ avec l'extension `btree_gist` disponible
-- Prisma ORM 7.9.0
+## Développement local
 
+Prérequis : Node.js 20.19+ et npm. Pour utiliser Neon, le dépôt doit être lié au projet avant le checkout de sa branche de développement.
 
+```powershell
+npm install
+Copy-Item .env.example .env
+neon checkout dev
+npm run db:generate
+npm run db:migrate:deploy
+npm run db:seed
+```
 
+Dans `.env`, configure `ADMIN_USERNAME` et `ADMIN_PASSWORD` pour l’accès à la console. L’authentification admin est locale à l’application; Neon fournit la base de données, pas les identifiants d’administration.
 
-## Commandes
+Démarre l’API et l’admin dans deux terminaux :
+
+```powershell
+npm run dev:api       # http://localhost:3000
+```
+
+```powershell
+npm run dev:admin     # http://localhost:5173
+```
+
+Ouvre <http://localhost:5173> et connecte-toi avec `ADMIN_USERNAME` et `ADMIN_PASSWORD`. En développement, `ADMIN_MOCK_DATA` vaut `true` par défaut. Pour lire les données de Neon `dev`, définis `ADMIN_MOCK_DATA=false` dans `.env`.
+
+`DATABASE_URL` est l’URL poolée utilisée par l’API. `DATABASE_URL_UNPOOLED` est l’URL directe pour Prisma Migrate et le seed. Ne commite jamais `.env`.
+
+Avant toute migration distante, vérifie la branche Neon sélectionnée. Les migrations sont d’abord validées en développement; aucune migration de production n’est automatique.
+
+## API Yeria
+
+L’API expose les catégories et profils actifs, ainsi que les routes de profil prestataire et de demandes client/prestataire. Les routes personnelles exigent un jeton Bearer Yeria; le `sub` vérifié sert d’identité et n’est jamais accepté depuis le corps de la requête.
+
+Pour activer l’authentification réelle, configure `YERIA_APP_ID` et `YERIA_SERVICE_ID` dans `.env`. `YERIA_BASE_URL` utilise par défaut `https://yeria.app`; `YERIA_DEV_KEY_ID` et `SERVICE_ED25519_PRIVATE_KEY` sont optionnels et ne doivent pas être partagés ni commités. Sans identifiants Yeria, les routes protégées répondent avec une erreur de configuration au lieu d’accepter une identité non vérifiée.
+
+Les nouveaux profils sont créés en `DRAFT`, puis soumis à la modération pour passer à `PENDING`. Le parcours utilise les catégories, statuts et identifiants entiers du schéma Jyoss; il n’ajoute pas de migration.
+
+## Netlify
+
+Netlify publie l’interface d’administration et route `/api/*` vers une Function qui charge l’application `apps/api`. Configure les variables d’environnement côté Netlify : `DATABASE_URL` (URL poolée Neon), `ADMIN_USERNAME`, `ADMIN_PASSWORD` (au moins 12 caractères en production), ainsi que les valeurs de messagerie si elles sont utilisées. `DATABASE_URL_UNPOOLED` sert uniquement aux opérations Prisma et ne doit pas être exposée au client.
+
+La variable de build `DATABASE_URL_UNPOOLED` de `netlify.toml` est une URL locale factice utilisée par Prisma pour générer le client; la compilation ne s’y connecte pas. Ne remplace pas cette valeur par un secret. Aucune migration distante n’est exécutée par le build Netlify.
+
+## Commandes utiles
 
 ```powershell
 npm run db:validate
 npm run db:generate
-npm run db:migrate:dev
+npm run db:migrate:dev -- --name <nom>
+npm run db:migrate:deploy
 npm run db:seed
-npm run dev
-npm run admin:dev
+npm test
 npm run build
-npm run admin:build
-npm start
-npm run admin:bootstrap -- admin@liena.fr
-npm run test
-npm run test:db
 ```
 
-- `db:migrate:dev` crée une migration lors du développement et exige une base accessible.
-- `db:migrate:deploy` applique uniquement les migrations versionnées; utilisez-le pour les déploiements.
-- `dev` démarre l'API en mode développement sur le port configuré par `PORT` (3000 par défaut).
-- `admin:dev` démarre l'interface React dans `apps/admin` sur `http://localhost:5173`.
-- `build` compile l'application TypeScript dans `dist`; `start` démarre cette version compilée.
-- `admin:build` vérifie les types et compile l'interface React.
-- `admin:bootstrap` crée un lien d'activation de 15 minutes pour le premier super-administrateur, uniquement si aucun administrateur ni bootstrap en attente n'existe. La commande affiche un lien secret une seule fois : exécutez-la dans un terminal privé et ne partagez pas sa sortie.
-- `test` valide le schéma Prisma et exécute les tests unitaires HTTP/configuration sans connexion à PostgreSQL.
-- `db:generate` régénère le client Prisma après une modification du schéma.
-- `test:db` applique les migrations et le seed deux fois sur `TEST_DATABASE_URL`, puis exécute les tests d'intégrité/concurrence. Il ne réinitialise pas la base et refuse un nom de base ne contenant pas `test`.
-- `db:seed` est idempotent et ne crée que les catégories du catalogue.
+`npm run test:db` exige `TEST_DATABASE_URL` vers une base dédiée dont le nom contient `test`; le script refuse de l’exécuter contre la base de l’application.
 
-Le seed et les commandes Prisma lisent `DATABASE_URL`. Ne lancez pas ces commandes contre une base contenant des données utiles sans avoir compris l'effet de la migration.
+## Documentation
 
-## Authentification de l’administration
-
-1. Renseignez `DATABASE_URL`, `CORS_ORIGIN`, `APP_URL`, `EMAIL_FROM` et `RESEND_API_KEY` dans `.env`. Ne partagez jamais les clés API.
-2. Appliquez la migration puis générez le client Prisma : `npm run db:migrate:dev` et `npm run db:generate`.
-3. Créez le compte initial avec `npm run admin:bootstrap -- admin@liena.fr`; ouvrez le lien à usage unique affiché dans le terminal.
-4. Démarrez l’API avec `npm run dev`, puis l’interface dans un autre terminal avec `npm run admin:dev`.
-5. Depuis la console, le super-administrateur peut inviter d’autres administrateurs, modifier leurs rôles et retirer leurs accès. Les inscriptions publiques avec privilèges sont désactivées.
-
-Les invitations expirent après 48 heures; les liens de récupération expirent après 30 minutes et ne peuvent être utilisés qu’une fois. Une demande de récupération renvoie toujours le même message, qu’un compte existe ou non. Les mots de passe utilisent Argon2id (12 caractères minimum). Les sessions serveur sont conservées 12 heures par défaut, ou 30 jours si « Mémoriser cet appareil » est coché; le cookie de session est `HttpOnly`, `SameSite=Lax` par défaut et `Secure` en production. Les mutations exigent un jeton CSRF et l’origine configurée. Le retrait d’accès révoque immédiatement les sessions, et l’application empêche de retirer le dernier super-administrateur actif.
-
-Le compte Resend de test n’envoie des messages qu’à l’adresse autorisée par le mode de test. Pour une livraison réelle, vérifiez un domaine dans Resend et utilisez une adresse d’expédition de ce domaine via `EMAIL_FROM`. Définissez `RESEND_API_KEY` uniquement dans l’environnement d’exécution. Le frontend utilise `http://localhost:3000/api/v1` par défaut; pour le modifier, copiez `apps/admin/.env.example` vers `apps/admin/.env.local` et adaptez `VITE_API_URL`.
-
-Pour déployer le frontend sur une autre origine, configurez l’origine exacte de l’application dans `CORS_ORIGIN` côté API et `VITE_API_URL` dans l’environnement de build React. En production, utilisez HTTPS pour les deux. Si le frontend et l’API sont sur des sites différents, configurez `COOKIE_SAME_SITE=none` et HTTPS; l’origine exacte et le jeton CSRF restent obligatoires. Si l’API est derrière un reverse proxy, réglez `TRUST_PROXY_HOPS` sur le nombre exact de proxies de confiance (et non sur une valeur arbitraire) afin de conserver des adresses IP fiables pour les journaux et la limitation des tentatives.
-
-La limitation de tentatives de connexion utilise actuellement le stockage mémoire du processus; pour plusieurs instances de l’API, remplacez-le par un stockage partagé avant la mise à l’échelle. L’authentification multifacteur n’est pas incluse dans cette première version et devrait être ajoutée avant une mise en production d’un espace d’administration sensible.
-
-## API initiale
-
-- `GET /health` vérifie la connexion PostgreSQL et renvoie `503` si la base est indisponible.
-- `GET /api/v1/categories/:slug` retourne une catégorie active et ses sous-catégories actives.
-- `POST /api/v1/services/search` recherche les prestations publiées de prestataires vérifiés. Le corps JSON accepte `categoryId` (UUID), `city`, `page` (1 par défaut) et `pageSize` (20 par défaut, maximum 50).
-- `GET /api/v1/admin/csrf`, `POST /api/v1/admin/login`, `GET /api/v1/admin/me` et `POST /api/v1/admin/logout` assurent l’accès à l’espace admin.
-- Les invitations, leur acceptation, la récupération du mot de passe et la gestion des administrateurs sont exposées sous `/api/v1/admin`; elles nécessitent les rôles et protections documentés ci-dessus.
-
-Les erreurs ont une forme JSON stable (`error.code`, `error.message`, `requestId`). Les validations d'entrée utilisent Zod. Helmet, CORS contrôlé, limite JSON de 1 Mio et identifiant de requête sont activés.
-
-## Architecture et règles métier
-
-Voir :
-
-- [Architecture de la base](./docs/database-architecture.md)
-- [Dictionnaire de données](./docs/data-dictionary.md)
-- [Règles métier](./docs/business-rules.md)
-- [Validation et migrations](./docs/database-validation.md)
-
-Les contrôles d'accès aux ressources et les contrôles de propriété des fonctions métier restent à implémenter dans l'API. Les contraintes SQL renforcent l'intégrité, mais ne remplacent pas ces contrôles.
+- [Architecture de la base](./docs/architecture/database-architecture.md)
+- [Dictionnaire de données](./docs/architecture/data-dictionary.md)
+- [Migrations et validation](./docs/architecture/database-validation.md)
+- [Règles métier](./docs/architecture/business-rules.md)
+- [Structure fullstack](./docs/architecture/fullstack-structure.md)
