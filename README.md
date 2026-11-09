@@ -40,25 +40,6 @@ Ouvre <http://localhost:5173> et connecte-toi avec `ADMIN_USERNAME` et `ADMIN_PA
 
 Avant toute migration distante, vérifie la branche Neon sélectionnée. Les migrations sont d’abord validées en développement; aucune migration de production n’est automatique.
 
-## Docker local
-
-La configuration Docker utilise un PostgreSQL local isolé; elle ne nécessite pas Neon.
-
-```powershell
-Copy-Item .env.docker.example .env.docker
-notepad .env.docker
-docker compose --env-file .env.docker up --build -d
-docker compose --env-file .env.docker ps
-```
-
-Ouvre <http://localhost:8080>. Pour arrêter les services sans supprimer les données :
-
-```powershell
-docker compose --env-file .env.docker down
-```
-
-`docker compose down -v` supprime aussi les données PostgreSQL locales. La configuration Docker est destinée au développement, pas à une mise en production.
-
 ## Netlify
 
 Netlify publie l’interface d’administration et route `/api/*` vers une Function qui charge l’application `apps/api`. Configure les variables d’environnement côté Netlify : `DATABASE_URL` (URL poolée Neon), `ADMIN_USERNAME`, `ADMIN_PASSWORD` (au moins 12 caractères en production), ainsi que les valeurs de messagerie si elles sont utilisées. `DATABASE_URL_UNPOOLED` sert uniquement aux opérations Prisma et ne doit pas être exposée au client.
