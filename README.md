@@ -1,56 +1,88 @@
-# Liena — monorepo fullstack
+# Liena
 
-Référence : [docs/architecture/fullstack-structure.md](./docs/architecture/fullstack-structure.md).
+Liena est un monorepo pour l’API Express, la console d’administration et l’application mobile Yeria.
 
 | App | État |
-|-----|------|
-| `apps/api` | API Express avec authentification locale de l'administration et accès Prisma |
-| `apps/admin` | Interface React opérationnelle |
-| `apps/mobile` | **Squelette** Yeria (dossiers vides) |
-| `packages/*` | Stubs partagés |
-| `prisma/` | Modèle MVP PostgreSQL et migrations Prisma |
+|---|---|
+| `apps/api` | API Express avec authentification locale de l’administration et accès Prisma |
+| `apps/admin` | Console React de supervision et modération des prestataires |
+| `apps/mobile` | Squelette d’intégration Yeria |
+| `prisma` | Modèle MVP PostgreSQL et migrations |
 
-## Commandes
+## Développement local
+
+Prérequis : Node.js 20.19+ et npm. Pour utiliser Neon, le dépôt doit être lié au projet avant le checkout de sa branche de développement.
 
 ```powershell
 npm install
-copy .env.example .env
+Copy-Item .env.example .env
 neon checkout dev
 npm run db:generate
 npm run db:migrate:deploy
 npm run db:seed
-npm run dev:admin      # http://localhost:5173
-npm run dev:api        # http://localhost:3000
-npm run build
+```
+
+Dans `.env`, configure `ADMIN_USERNAME` et `ADMIN_PASSWORD` pour l’accès à la console. L’authentification admin est locale à l’application; Neon fournit la base de données, pas les identifiants d’administration.
+
+Démarre l’API et l’admin dans deux terminaux :
+
+```powershell
+npm run dev:api       # http://localhost:3000
+```
+
+```powershell
+npm run dev:admin     # http://localhost:5173
+```
+
+Ouvre <http://localhost:5173> et connecte-toi avec `ADMIN_USERNAME` et `ADMIN_PASSWORD`. En développement, `ADMIN_MOCK_DATA` vaut `true` par défaut. Pour lire les données de Neon `dev`, définis `ADMIN_MOCK_DATA=false` dans `.env`.
+
+`DATABASE_URL` est l’URL poolée utilisée par l’API. `DATABASE_URL_UNPOOLED` est l’URL directe pour Prisma Migrate et le seed. Ne commite jamais `.env`.
+
+Avant toute migration distante, vérifie la branche Neon sélectionnée. Les migrations sont d’abord validées en développement; aucune migration de production n’est automatique.
+
+## Docker local
+
+La configuration Docker utilise un PostgreSQL local isolé; elle ne nécessite pas Neon.
+
+```powershell
+Copy-Item .env.docker.example .env.docker
+notepad .env.docker
+docker compose --env-file .env.docker up --build -d
+docker compose --env-file .env.docker ps
+```
+
+Ouvre <http://localhost:8080>. Pour arrêter les services sans supprimer les données :
+
+```powershell
+docker compose --env-file .env.docker down
+```
+
+`docker compose down -v` supprime aussi les données PostgreSQL locales. La configuration Docker est destinée au développement, pas à une mise en production.
+
+## Netlify
+
+Netlify publie l’interface d’administration et route `/api/*` vers une Function qui charge l’application `apps/api`. Configure les variables d’environnement côté Netlify : `DATABASE_URL` (URL poolée Neon), `ADMIN_USERNAME`, `ADMIN_PASSWORD` (au moins 12 caractères en production), ainsi que les valeurs de messagerie si elles sont utilisées. `DATABASE_URL_UNPOOLED` sert uniquement aux opérations Prisma et ne doit pas être exposée au client.
+
+La variable de build `DATABASE_URL_UNPOOLED` de `netlify.toml` est une URL locale factice utilisée par Prisma pour générer le client; la compilation ne s’y connecte pas. Ne remplace pas cette valeur par un secret. Aucune migration distante n’est exécutée par le build Netlify.
+
+## Commandes utiles
+
+```powershell
+npm run db:validate
+npm run db:generate
+npm run db:migrate:dev -- --name <nom>
+npm run db:migrate:deploy
+npm run db:seed
 npm test
+npm run build
 ```
 
-`DATABASE_URL` sert aux connexions de l’API ; `DATABASE_URL_UNPOOLED` sert aux migrations Prisma. Pour Neon, utilise l’URL pooled pour `DATABASE_URL` et l’URL directe pour `DATABASE_URL_UNPOOLED`. Garde les variables de connexion dans `.env`, jamais dans Git.
-
-Le projet doit être lié à Neon avant `neon checkout dev`. Cette commande sélectionne la branche de développement et récupère ses variables d’environnement. Vérifie toujours la branche active avant une migration; ne déploie pas vers `production` sans validation explicite.
-
-`npm run test:db` exige un `TEST_DATABASE_URL` distinct, vers une base dédiée dont le nom contient `test`; ce script applique les migrations et vérifie que le seed est idempotent.
-
-## Connexion à l’administration
-
-Lance l’API et l’interface dans deux terminaux :
-
-```powershell
-npm run dev:api
-```
-
-```powershell
-npm run dev:admin
-```
-
-Ouvre ensuite <http://localhost:5173>. Connecte-toi avec `ADMIN_USERNAME` et `ADMIN_PASSWORD` configurés dans le `.env` local. Ce compte d’administration est indépendant de Yeria et de Neon; Neon ne fournit ici que la base de données. Si ces variables ne sont pas définies, ajoute tes propres valeurs dans `.env` (ne les committe pas).
-
-En développement, `ADMIN_MOCK_DATA` vaut `true` par défaut. Pour que l’administration lise les données de la branche Neon `dev`, définis `ADMIN_MOCK_DATA=false` dans `.env`. Le tableau peut alors être vide jusqu’à ce que des prestataires soient créés.
+`npm run test:db` exige `TEST_DATABASE_URL` vers une base dédiée dont le nom contient `test`; le script refuse de l’exécuter contre la base de l’application.
 
 ## Documentation
 
-- [Architecture fullstack](./docs/architecture/fullstack-structure.md)
 - [Architecture de la base](./docs/architecture/database-architecture.md)
 - [Dictionnaire de données](./docs/architecture/data-dictionary.md)
 - [Migrations et validation](./docs/architecture/database-validation.md)
-- [Product / PDF](./docs/architecture/product/)
+- [Règles métier](./docs/architecture/business-rules.md)
+- [Structure fullstack](./docs/architecture/fullstack-structure.md)

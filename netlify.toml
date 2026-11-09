@@ -1,21 +1,17 @@
-# example netlify.toml
 [build]
-  command = "npm run build"
-  functions = "netlify/functions"
+  command = "npm run db:generate && npm run build"
   publish = "apps/admin/dist"
 
-  ## Uncomment to use this redirect for Single Page Applications like create-react-app.
-  ## Not needed for static site generators.
-  #[[redirects]]
-  #  from = "/*"
-  #  to = "/index.html"
-  #  status = 200
+[build.environment]
+  DATABASE_URL_UNPOOLED = "postgresql://build:build@127.0.0.1:5432/build"
+  VITE_API_URL = "/api/v1"
 
-  ## (optional) Settings for Netlify Dev
-  ## https://github.com/netlify/cli/blob/main/docs/netlify-dev.md#project-detection
-  #[dev]
-  #  command = "yarn start" # Command to start your dev server
-  #  port = 3000 # Port that the dev server will be listening on
-  #  publish = "dist" # Folder with the static content for _redirect file
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["@prisma/client", "@prisma/adapter-pg", "pg"]
 
-  ## more info on configuring this file: https://ntl.fyi/file-based-build-config
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
