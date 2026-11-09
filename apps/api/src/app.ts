@@ -6,8 +6,10 @@ import { config } from "./config/env";
 import { errorHandler } from "./middlewares/errorHandler";
 import { requestIdMiddleware } from "./middlewares/requestId";
 import { adminRouter } from "./modules/admin/admin.routes";
-import { createUserRouter } from "./modules/user/user.routes";
-import { createProviderRequestsRouter, createRequestsRouter } from "./modules/requests/requests.routes";
+import { createCategoryRouter } from "./modules/categories/category.routes";
+import { createClientRouter } from "./modules/clients/client.routes";
+import { createProviderRouter } from "./modules/providers/provider.routes";
+import { createServiceRequestRouter } from "./modules/service-requests/service-request.routes";
 
 const adminNoCache: express.RequestHandler = (_request, response, next) => {
   response.setHeader("Cache-Control", "no-store");
@@ -42,9 +44,10 @@ export function createApp(options: { userAuthenticate?: RequestHandler } = {}) {
   });
 
   app.use("/api/v1/admin", adminNoCache, adminRouter);
-  app.use("/api/v1/providers/requests", createProviderRequestsRouter(options.userAuthenticate));
-  app.use("/api/v1/requests", createRequestsRouter(options.userAuthenticate));
-  app.use("/api/v1", createUserRouter(options.userAuthenticate));
+  app.use("/api/v1/providers/requests", createServiceRequestRouter(options.userAuthenticate));
+  app.use("/api/v1/requests", createClientRouter(options.userAuthenticate));
+  app.use("/api/v1", createCategoryRouter());
+  app.use("/api/v1", createProviderRouter(options.userAuthenticate));
   app.use(errorHandler);
 
   return app;

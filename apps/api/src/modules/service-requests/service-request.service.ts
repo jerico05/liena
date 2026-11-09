@@ -1,6 +1,6 @@
 import { HttpError } from "../../middlewares/errorHandler";
-import * as repository from "./requests.repository";
-import type { RequestCreate } from "./requests.validator";
+import * as repository from "./service-request.repository";
+import type { RequestCreate } from "./service-request.validator";
 import { ProviderStatus, ServiceRequestStatus } from "@prisma/client";
 
 export async function createRequest(clientYeriaSub: string, input: RequestCreate) {

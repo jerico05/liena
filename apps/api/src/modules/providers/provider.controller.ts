@@ -1,12 +1,11 @@
 import type { RequestHandler } from "express";
-import * as service from "./user.service";
+import * as service from "./provider.service";
 
 function identity(request: Parameters<RequestHandler>[0]): string {
   if (!request.user) throw new Error("Authentication middleware did not populate request.user");
   return request.user.yeriaSub;
 }
 
-export const listCategories: RequestHandler = async (_request, response, next) => { try { response.json({ data: await service.listCategories() }); } catch (error) { next(error); } };
 export const listProviders: RequestHandler = async (request, response, next) => { try { response.json(await service.listProviders(request.validatedQuery as never)); } catch (error) { next(error); } };
 export const getProvider: RequestHandler = async (request, response, next) => { try { response.json({ data: await service.getProvider((request.validatedParams as { slug: string }).slug) }); } catch (error) { next(error); } };
 export const createProfile: RequestHandler = async (request, response, next) => { try { response.status(201).json({ data: await service.createProfile(identity(request), request.validatedBody as never) }); } catch (error) { next(error); } };

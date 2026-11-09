@@ -270,7 +270,9 @@ apps/api/src/
       routes, controller, service, repository, validator
     providers/
       routes, controller, service, repository, validator
-    requests/
+    clients/
+      routes, controller
+    service-requests/
       routes, controller, service, repository, validator
     shared/
       identity, errors, pagination, status transitions

@@ -2,12 +2,11 @@ import { Router } from "express";
 import type { RequestHandler } from "express";
 import { authenticate } from "../../middlewares/authenticate";
 import { validateBody, validateParams, validateQuery } from "../../middlewares/validateRequest";
-import * as controller from "./user.controller";
-import { publicListQuerySchema, providerProfileCreateSchema, providerProfileUpdateSchema, slugParamsSchema } from "./user.validator";
+import * as controller from "./provider.controller";
+import { publicListQuerySchema, providerProfileCreateSchema, providerProfileUpdateSchema, slugParamsSchema } from "./provider.validator";
 
-export function createUserRouter(authenticateMiddleware: RequestHandler = authenticate) {
+export function createProviderRouter(authenticateMiddleware: RequestHandler = authenticate) {
   const router = Router();
-  router.get("/categories", controller.listCategories);
   router.get("/providers", validateQuery(publicListQuerySchema), controller.listProviders);
   router.get("/providers/:slug", validateParams(slugParamsSchema), controller.getProvider);
   router.post("/providers/profile", authenticateMiddleware, validateBody(providerProfileCreateSchema), controller.createProfile);
@@ -18,4 +17,4 @@ export function createUserRouter(authenticateMiddleware: RequestHandler = authen
   return router;
 }
 
-export const userRouter = createUserRouter();
+export const providerRouter = createProviderRouter();

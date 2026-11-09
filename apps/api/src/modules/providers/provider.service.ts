@@ -1,9 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { HttpError } from "../../middlewares/errorHandler";
-import * as repository from "./user.repository";
-import type { PublicListQuery, ProviderProfileCreate, ProviderProfileUpdate } from "./user.validator";
+import * as repository from "./provider.repository";
+import type { PublicListQuery, ProviderProfileCreate, ProviderProfileUpdate } from "./provider.validator";
 
-export const listCategories = () => repository.listActiveCategories();
 export const listProviders = (query: PublicListQuery) => repository.listPublicProviders(query);
 
 export async function getProvider(slug: string) {

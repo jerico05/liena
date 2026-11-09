@@ -1,6 +1,6 @@
 import { ProviderStatus, ServiceRequestStatus } from "@prisma/client";
 import { prisma } from "../../config/database";
-import type { RequestCreate } from "./requests.validator";
+import type { RequestCreate } from "./service-request.validator";
 
 export async function createRequest(clientYeriaSub: string, input: RequestCreate) {
   const [category, provider] = await Promise.all([

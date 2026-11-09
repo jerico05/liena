@@ -1,6 +1,6 @@
 import { Prisma, ProviderStatus, ServiceStatus } from "@prisma/client";
 import { prisma } from "../../config/database";
-import type { PublicListQuery, ProviderProfileCreate, ProviderProfileUpdate } from "./user.validator";
+import type { PublicListQuery, ProviderProfileCreate, ProviderProfileUpdate } from "./provider.validator";
 
 const publicProfileSelect = {
   id: true, businessName: true, slug: true, description: true, status: true,
@@ -48,13 +48,6 @@ export async function getPublicProvider(slug: string) {
     where: { slug, status: { in: [ProviderStatus.APPROVED, ProviderStatus.VERIFIED] } }, select: publicProfileSelect,
   });
   return row ? mapProfile(row) : null;
-}
-
-export async function listActiveCategories() {
-  return prisma.category.findMany({
-    where: { isActive: true }, orderBy: [{ position: "asc" }, { name: "asc" }],
-    select: { id: true, parentId: true, name: true, slug: true, description: true, iconUrl: true, position: true },
-  });
 }
 
 export async function findProfileByYeriaSub(yeriaSub: string) {
