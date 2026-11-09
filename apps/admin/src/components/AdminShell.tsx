@@ -7,6 +7,7 @@ export type ConsoleSection = "dashboard" | "validations" | "providers";
 type AdminShellProps = {
   username: string;
   section: ConsoleSection;
+  title: string;
   pendingCount: number;
   onLogout: () => Promise<void>;
   onOpenDashboard: () => void;
@@ -18,6 +19,7 @@ type AdminShellProps = {
 export function AdminShell({
   username,
   section,
+  title,
   pendingCount,
   onLogout,
   onOpenDashboard,
@@ -55,40 +57,50 @@ export function AdminShell({
             type="button"
             className={section === "dashboard" ? "sidebar-link active" : "sidebar-link"}
             aria-current={section === "dashboard" ? "page" : undefined}
+            aria-label="Tableau de bord"
             onClick={onOpenDashboard}
           >
             <IconLayout className="sidebar-icon" />
-            Tableau de bord
+            <span>Tableau de bord</span>
           </button>
           <button
             type="button"
             className={section === "validations" ? "sidebar-link active" : "sidebar-link"}
             aria-current={section === "validations" ? "page" : undefined}
+            aria-label={`Validations${pendingCount > 0 ? `, ${pendingCount} en attente` : ""}`}
             onClick={onOpenValidations}
           >
             <IconClipboard className="sidebar-icon" />
-            Validations
+            <span>Validations</span>
             {pendingCount > 0 && <span className="sidebar-badge">{pendingCount}</span>}
           </button>
           <button
             type="button"
             className={section === "providers" ? "sidebar-link active" : "sidebar-link"}
             aria-current={section === "providers" ? "page" : undefined}
+            aria-label="Prestataires"
             onClick={onOpenProviders}
           >
             <IconUsers className="sidebar-icon" />
-            Prestataires
+            <span>Prestataires</span>
           </button>
         </nav>
 
-        <button type="button" className="sidebar-logout" onClick={handleLogout} disabled={isSubmitting}>
+        <button
+          type="button"
+          className="sidebar-logout"
+          aria-label="Déconnexion"
+          onClick={handleLogout}
+          disabled={isSubmitting}
+        >
           <IconLogout className="sidebar-icon" />
-          Déconnexion
+          <span>Déconnexion</span>
         </button>
       </aside>
 
       <div className="console-main">
         <header className="console-topbar">
+          <h1>{title}</h1>
           <div className="topbar-user">
             <span className="topbar-avatar">{displayName.charAt(0).toUpperCase()}</span>
             <span>

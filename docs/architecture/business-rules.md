@@ -1,48 +1,21 @@
-# Règles métier et transitions
+# Règles métier du MVP
 
-## Rôles et statuts
+## Identité et prestataires
 
-Un utilisateur peut cumuler `CLIENT`, `PROVIDER` et `ADMIN`. Son compte (`ACTIVE`, `SUSPENDED`, `DELETED`) est indépendant du statut de vérification du profil prestataire (`PENDING`, `VERIFIED`, `REJECTED`, `SUSPENDED`). La base n'autorise pas de tableau de rôles vide. L'API doit contrôler les rôles pour chaque action; un rôle reçu du client n'est jamais fiable.
+- Yeria authentifie les clients et prestataires. L'API doit vérifier le jeton et dériver le `sub` de l'identité authentifiée; ne jamais accepter cet identifiant comme preuve d'identité depuis un champ libre du client.
+- Chaque `ProviderProfile` est associé à un seul `yeria_sub`. Les comptes clients et prestataires ne sont pas dupliqués dans la base Liena.
+- Les statuts du profil sont `DRAFT`, `PENDING`, `APPROVED`, `REJECTED`, `SUSPENDED` et `ARCHIVED`. Les transitions autorisées doivent être validées par le service API.
+- Une décision de modération doit conserver l'acteur, le résultat et le motif éventuel. Les données d'administration continuent d'utiliser l'authentification locale existante.
 
-L'API normalise les adresses e-mail en minuscules; un index fonctionnel PostgreSQL protège également l'unicité sans distinction de casse.
+## Demandes de service
 
-Un profil est créé en attente de vérification. La transition en `VERIFIED` exige `verifiedAt`; la suspension conserve la date de vérification historique.
+- Une demande est rattachée à un client Yeria et à un profil prestataire existant.
+- Les statuts enregistrés sont `SENT`, `ACCEPTED`, `DECLINED` et `COMPLETED`.
+- Toute transition doit autoriser l'acteur selon son identité et son rôle, puis enregistrer le changement dans `RequestEvent` dans la même transaction que la mise à jour de la demande.
+- L'historique conserve l'ancien et le nouveau statut, l'acteur et une note facultative. L'autorisation et la validité des transitions relèvent de l'API; les clés étrangères seules ne les garantissent pas.
 
-## Réservations
+## Périmètre
 
-Cycle de vie retenu :
+Les services proposés par un profil restent un champ texte dans le MVP. Les réservations, paiements, adresses, avis, favoris et conversations ne sont pas modélisés dans le schéma actuel; leur ajout nécessitera des modèles et migrations dédiés.
 
-| État actuel | États suivants autorisés |
-|---|---|
-| `PENDING` | `ACCEPTED`, `REJECTED`, `CANCELLED` |
-| `ACCEPTED` | `SCHEDULED`, `CANCELLED` |
-| `SCHEDULED` | `IN_PROGRESS`, `CANCELLED` |
-| `IN_PROGRESS` | `COMPLETED`, `DISPUTED` |
-| `DISPUTED` | `COMPLETED`, `CANCELLED` |
-| `REJECTED`, `CANCELLED`, `COMPLETED` | Aucun |
-
-Un trigger PostgreSQL refuse les transitions non listées et ajoute une ligne d'historique à la création et à chaque changement de statut. Le changement de statut et les modifications de réservation doivent rester dans la même transaction. L'API peut définir `app.actor_id` et `app.status_note` dans la transaction avant l'écriture pour attribuer l'acteur et le commentaire; si l'acteur manque, l'historique reste attribué à `NULL`.
-
-Le passage en `ACCEPTED` (et les états actifs suivants) exige un intervalle complet et un prix convenu, y compris pour un service sur devis. `IN_PROGRESS`, `COMPLETED` et `DISPUTED` exigent une date de début; `COMPLETED` exige `completedAt`; `CANCELLED` exige `cancelledAt`. L'intervalle est semi-ouvert `[startsAt, endsAt)`, donc deux prestations adjacentes sont autorisées. Le prix convenu et la devise sont copiés dans la réservation; la base garantit le montant non négatif.
-
-La contrainte d'exclusion sur le prestataire et la plage de temps arbitre la concurrence, même si deux transactions vérifient simultanément un créneau. Les demandes `PENDING`, rejetées et annulées ne bloquent pas le planning. La disponibilité hebdomadaire et les exceptions sont des règles complémentaires à vérifier transactionnellement par l'API.
-
-## Prix des prestations
-
-- `FIXED`, `HOURLY` et `DAILY` ont un prix décimal non négatif; `QUOTE` n'a pas de prix initial.
-- Chaque prestation et réservation conserve une devise. XOF est une valeur par défaut MVP, pas une hypothèse universelle.
-- Le prix convenu est enregistré dans la réservation lorsqu'elle est acceptée et n'est pas recalculé depuis le service.
-
-## Avis, favoris et messagerie
-
-- Un avis n'est possible que pour une réservation terminée, par son client et pour le profil prestataire de cette réservation. Une clé étrangère composite et un trigger protègent cette règle; `bookingId` ne peut apparaître qu'une fois.
-- La note est un entier compris entre 1 et 5.
-- Un favori doit viser exactement un profil prestataire ou un service. Les clés uniques empêchent de répéter le même favori.
-- L'expéditeur d'un message doit être enregistré comme participant à la conversation via FK composite. Chaque conversation et chaque réservation ne sont pas automatiquement accessibles à tous les utilisateurs; l'API vérifie l'appartenance avant lecture/écriture.
-
-## Suppression et modération
-
-- `DELETED` implique `deletedAt`, et seul ce statut permet une date de suppression. L'effacement légal/anonymisation doit être traité explicitement, en préservant les instantanés commerciaux nécessaires.
-- Les signalements utilisent des FKs réelles; un `CHECK` exige une et une seule cible correspondant au type.
-- Le statut de modération, les notes et l'identité du modérateur sont stockés, mais la permission d'agir comme modérateur est contrôlée par le serveur.
-- Les journaux d'audit sont append-only par convention d'application. N'y inscrire aucun mot de passe, jeton, donnée de carte ou secret.
+Les prix indicatifs sont stockés en décimal (`numeric(12,2)`), jamais comme nombres flottants pour des calculs financiers.

@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-export const providerStatusSchema = z.enum(["PENDING", "VERIFIED", "REJECTED", "SUSPENDED"]);
+export const providerStatusSchema = z.enum([
+  "DRAFT",
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "SUSPENDED",
+  "ARCHIVED",
+]);
 
 export const providerListQuerySchema = z
   .object({
@@ -18,10 +25,10 @@ export const providerListQuerySchema = z
 
 export type ProviderListQuery = z.output<typeof providerListQuerySchema>;
 
-/** UUID en base ; identifiants `prov-mock-*` en mode démo. */
+/** Identifiants numériques en base ; identifiants `prov-mock-*` en mode démo. */
 export const providerIdParamsSchema = z
   .object({
-    id: z.union([z.string().uuid(), z.string().regex(/^prov-mock-\d{3}$/)]),
+    id: z.union([z.string().regex(/^[1-9]\d*$/), z.string().regex(/^prov-mock-\d{3}$/)]),
   })
   .strict();
 

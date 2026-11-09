@@ -28,7 +28,8 @@ export const getProvider: RequestHandler = async (request, response, next) => {
 export const reviewProvider: RequestHandler = async (request, response, next) => {
   try {
     const { id } = request.validatedParams as { id: string };
-    await reviewAdminProvider(id, request.validatedBody as ProviderReviewInput);
+    const admin = response.locals.admin as { username: string };
+    await reviewAdminProvider(id, request.validatedBody as ProviderReviewInput, admin.username);
     response.status(204).send();
   } catch (error) {
     next(error);

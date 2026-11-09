@@ -1,13 +1,20 @@
 import { useEffect, useState } from "react";
 import { ApiError, apiRequest, isAbortError } from "../lib/api";
-import { formatLocation, formatPerson, initials } from "../lib/format";
+import { initials } from "../lib/format";
 import type { ProviderListResponse, ProviderSummary, StatusFilter } from "../lib/types";
 import { IconEye, IconPin, IconSearch, IconUsers } from "./Icons";
 import { KpiGrid } from "./KpiGrid";
 import { PageHeader } from "./PageHeader";
 import { StatusBadge } from "./StatusBadge";
 
-const emptySummary: ProviderSummary = { pending: 0, verified: 0, rejected: 0, suspended: 0 };
+const emptySummary: ProviderSummary = {
+  DRAFT: 0,
+  PENDING: 0,
+  APPROVED: 0,
+  REJECTED: 0,
+  SUSPENDED: 0,
+  ARCHIVED: 0,
+};
 
 type ProviderBoardProps = {
   title?: string;
@@ -94,28 +101,28 @@ export function ProviderBoard({
           {
             id: "all",
             label: "Enregistrés",
-            value: summary.pending + summary.verified + summary.rejected + summary.suspended,
+            value: Object.values(summary).reduce((sum, count) => sum + count, 0),
             icon: <IconUsers />,
           },
           {
             id: "verified",
             label: "Vérifiés",
-            value: summary.verified,
+            value: summary.APPROVED,
             icon: <IconUsers />,
-            onClick: () => chooseStatus("VERIFIED"),
+            onClick: () => chooseStatus("APPROVED"),
           },
           {
             id: "pending",
             label: "En attente",
-            value: summary.pending,
-            hint: summary.pending > 0 ? "À traiter" : undefined,
+            value: summary.PENDING,
+            hint: summary.PENDING > 0 ? "À traiter" : undefined,
             icon: <IconUsers />,
             onClick: () => chooseStatus("PENDING"),
           },
           {
             id: "suspended",
             label: "Suspendus",
-            value: summary.suspended,
+            value: summary.SUSPENDED,
             icon: <IconUsers />,
             onClick: () => chooseStatus("SUSPENDED"),
           },
@@ -129,7 +136,7 @@ export function ProviderBoard({
             <IconSearch className="field-icon" />
             <input
               type="search"
-              placeholder="Rechercher par nom, e-mail, téléphone ou ville"
+              placeholder="Rechercher par nom, services, zone ou contact"
               value={search}
               onChange={(event) => {
                 setSearch(event.target.value);
@@ -145,10 +152,12 @@ export function ProviderBoard({
                 onChange={(event) => chooseStatus(event.target.value as StatusFilter)}
               >
                 <option value="ALL">Tous les statuts</option>
+                <option value="DRAFT">Brouillons</option>
                 <option value="PENDING">En attente de validation</option>
-                <option value="VERIFIED">Vérifiés</option>
+                <option value="APPROVED">Approuvés</option>
                 <option value="REJECTED">Refusés</option>
                 <option value="SUSPENDED">Suspendus</option>
+                <option value="ARCHIVED">Archivés</option>
               </select>
             </label>
           )}
@@ -176,21 +185,21 @@ export function ProviderBoard({
                   <tr key={provider.id}>
                     <td>
                       <div className="identity">
-                        <span className="avatar">{initials(provider.contact.firstName, provider.contact.lastName)}</span>
+                        <span className="avatar">{initials(provider.displayName)}</span>
                         <span>
-                          <strong>{provider.businessName}</strong>
-                          <span className="table-subtext">{formatPerson(provider.contact.firstName, provider.contact.lastName)}</span>
+                          <strong>{provider.displayName}</strong>
+                          <span className="table-subtext">{provider.categoryLabel}</span>
                         </span>
                       </div>
                     </td>
                     <td className="hide-sm">
-                      {provider.contact.email}
-                      <span className="table-subtext">{provider.contact.phone ?? "—"}</span>
+                      {provider.contact || "—"}
+                      <span className="table-subtext">{provider.services}</span>
                     </td>
                     <td>
                       <span className="location-line">
                         <IconPin className="inline-icon" />
-                        {formatLocation(provider.city, provider.neighborhood, provider.countryCode)}
+                        {provider.zone}
                       </span>
                     </td>
                     <td><StatusBadge status={provider.status} /></td>

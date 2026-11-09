@@ -20,22 +20,33 @@ if (!testDatabaseName.toLowerCase().includes("test")) {
   throw new Error("The test database name must contain 'test' as a safety check.");
 }
 
-if (process.env.DATABASE_URL) {
-  const productionUrl = new URL(process.env.DATABASE_URL);
+if (process.env.DATABASE_URL || process.env.DATABASE_URL_UNPOOLED) {
   const identity = (url) => {
-    const hostname = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+    const hostname = url.hostname
+      .replace(/^\[|\]$/g, "")
+      .replace(/-pooler(?=\.)/, "")
+      .toLowerCase();
     const normalizedHostname = ["localhost", "127.0.0.1", "::1"].includes(hostname)
       ? "loopback"
       : hostname;
     return `${url.protocol}//${normalizedHostname}:${url.port || "5432"}${decodeURIComponent(url.pathname)}`;
   };
 
-  if (identity(testUrl) === identity(productionUrl)) {
-    throw new Error("TEST_DATABASE_URL must not point to DATABASE_URL.");
+  const applicationDatabaseUrls = [
+    process.env.DATABASE_URL,
+    process.env.DATABASE_URL_UNPOOLED,
+  ].filter(Boolean);
+
+  if (applicationDatabaseUrls.some((url) => identity(testUrl) === identity(new URL(url)))) {
+    throw new Error("TEST_DATABASE_URL must not point to the application database.");
   }
 }
 
-const env = { ...process.env, DATABASE_URL: testDatabaseUrl };
+const env = {
+  ...process.env,
+  DATABASE_URL: testDatabaseUrl,
+  DATABASE_URL_UNPOOLED: testDatabaseUrl,
+};
 const prismaCli = path.join(projectRoot, "node_modules", "prisma", "build", "index.js");
 
 function run(command, args) {

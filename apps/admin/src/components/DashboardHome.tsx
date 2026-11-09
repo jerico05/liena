@@ -1,13 +1,20 @@
 import { useEffect, useState } from "react";
 import { ApiError, apiRequest, isAbortError } from "../lib/api";
-import { formatDate, formatLocation, formatPerson, initials } from "../lib/format";
+import { formatDate, initials } from "../lib/format";
 import type { DashboardResponse, ProviderSummary, StatusFilter } from "../lib/types";
 import { IconClipboard, IconEye, IconPin, IconUsers } from "./Icons";
 import { KpiGrid } from "./KpiGrid";
 import { PageHeader } from "./PageHeader";
 import { StatusBadge } from "./StatusBadge";
 
-const emptySummary: ProviderSummary = { pending: 0, verified: 0, rejected: 0, suspended: 0 };
+const emptySummary: ProviderSummary = {
+  DRAFT: 0,
+  PENDING: 0,
+  APPROVED: 0,
+  REJECTED: 0,
+  SUSPENDED: 0,
+  ARCHIVED: 0,
+};
 
 type DashboardHomeProps = {
   notice?: string;
@@ -50,7 +57,7 @@ export function DashboardHome({
   }, [onUnauthorized]);
 
   const summary = data?.summary ?? emptySummary;
-  const total = summary.pending + summary.verified + summary.rejected + summary.suspended;
+  const total = Object.values(summary).reduce((sum, count) => sum + count, 0);
 
   return (
     <>
@@ -58,9 +65,9 @@ export function DashboardHome({
         title="Supervision & vetting"
         description="Suivez les inscriptions prestataires et traitez les dossiers en attente."
         actions={
-          summary.pending > 0 ? (
+          summary.PENDING > 0 ? (
             <button type="button" className="primary-button" onClick={onOpenValidations}>
-              Dossiers à valider ({summary.pending})
+              Dossiers à valider ({summary.PENDING})
             </button>
           ) : undefined
         }
@@ -81,15 +88,15 @@ export function DashboardHome({
           {
             id: "verified",
             label: "Profils vérifiés",
-            value: summary.verified,
+            value: summary.APPROVED,
             icon: <IconUsers />,
-            onClick: () => onOpenStatus("VERIFIED"),
+            onClick: () => onOpenStatus("APPROVED"),
           },
           {
             id: "pending",
             label: "Dossiers à valider",
-            value: summary.pending,
-            hint: summary.pending > 0 ? "À traiter" : undefined,
+            value: summary.PENDING,
+            hint: summary.PENDING > 0 ? "À traiter" : undefined,
             icon: <IconClipboard />,
             onClick: onOpenValidations,
           },
@@ -128,17 +135,17 @@ export function DashboardHome({
                   <tr key={provider.id}>
                     <td>
                       <div className="identity">
-                        <span className="avatar">{initials(provider.contact.firstName, provider.contact.lastName)}</span>
+                        <span className="avatar">{initials(provider.displayName)}</span>
                         <span>
-                          <strong>{formatPerson(provider.contact.firstName, provider.contact.lastName)}</strong>
-                          <span className="table-subtext">{provider.businessName}</span>
+                          <strong>{provider.displayName}</strong>
+                          <span className="table-subtext">{provider.categoryLabel}</span>
                         </span>
                       </div>
                     </td>
                     <td>
                       <span className="location-line">
                         <IconPin className="inline-icon" />
-                        {formatLocation(provider.city, provider.neighborhood, provider.countryCode)}
+                        {provider.zone}
                       </span>
                       <span className="table-subtext">Demande du {formatDate(provider.createdAt)}</span>
                     </td>

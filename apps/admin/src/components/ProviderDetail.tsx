@@ -1,17 +1,9 @@
 import { useEffect, useState } from "react";
 import { ApiError, apiRequest, isAbortError } from "../lib/api";
-import {
-  formatDate,
-  formatLocation,
-  formatMoney,
-  formatPerson,
-  initials,
-  mapUrl,
-} from "../lib/format";
+import { formatDate, initials } from "../lib/format";
 import type { ProviderDetail as ProviderDetailData, ProviderDetailResponse } from "../lib/types";
 import { ConfirmDialog } from "./ConfirmDialog";
-import { IconPin } from "./Icons";
-import { AccountBadge, ServiceBadge, StatusBadge } from "./StatusBadge";
+import { StatusBadge } from "./StatusBadge";
 
 type ProviderDetailProps = {
   providerId: string;
@@ -46,7 +38,7 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
           onUnauthorized();
           return;
         }
-        setError(caught instanceof ApiError ? caught.message : "Impossible d’ouvrir cette fiche.");
+        setError(caught instanceof ApiError ? caught.message : "Impossible d’ouvrir la fiche.");
       })
       .finally(() => {
         if (!controller.signal.aborted) setIsLoading(false);
@@ -68,8 +60,8 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
       });
       onReviewed(
         decision === "VERIFY"
-          ? "Le prestataire est vérifié. Il peut apparaître dans la recherche de sa zone."
-          : "La demande a été refusée.",
+          ? "Le profil est approuvé et peut être visible par les clients."
+          : "La candidature a été refusée.",
       );
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
@@ -100,7 +92,7 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
 
   const canReview = provider.status === "PENDING";
   const rejectNeedsNote = notes.trim().length < 3;
-  const locationLabel = formatLocation(provider.city, provider.neighborhood, provider.countryCode);
+  const mediaRefs = getMediaReferences(provider.mediaRefs);
 
   return (
     <>
@@ -109,39 +101,31 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
 
       <section className="provider-hero panel">
         <div className="provider-hero-main">
-          {provider.contact.avatarUrl ? (
-            <img className="provider-hero-avatar" src={provider.contact.avatarUrl} alt="" />
-          ) : (
-            <span className="provider-hero-avatar provider-hero-initials">
-              {initials(provider.contact.firstName, provider.contact.lastName)}
-            </span>
-          )}
+          <span className="provider-hero-avatar provider-hero-initials">
+            {initials(provider.displayName)}
+          </span>
           <div className="provider-hero-copy">
-            <p className="provider-hero-eyebrow">Fiche prestataire</p>
-            <h1>{provider.businessName}</h1>
-            <p className="provider-hero-subtitle">
-              {formatPerson(provider.contact.firstName, provider.contact.lastName)}
-              <span aria-hidden="true"> · </span>
-              <span className="provider-slug">{provider.slug}</span>
-            </p>
+            <p className="provider-hero-eyebrow">Profil professionnel</p>
+            <h1>{provider.displayName}</h1>
+            <p className="provider-hero-subtitle">{provider.categoryLabel} · {provider.zone}</p>
             <div className="provider-hero-badges">
               <StatusBadge status={provider.status} />
-              <AccountBadge status={provider.contact.accountStatus} />
+              {!provider.isActive && <span className="badge badge-suspended">Inactif</span>}
             </div>
           </div>
         </div>
-        <ul className="provider-stats" aria-label="Indicateurs">
+        <ul className="provider-stats" aria-label="Informations du profil">
           <li>
-            <span>Prestations</span>
-            <strong>{provider.serviceCount}</strong>
-          </li>
-          <li>
-            <span>Avis</span>
-            <strong>{provider.reviewCount}</strong>
-          </li>
-          <li>
-            <span>Inscription</span>
+            <span>Créé le</span>
             <strong>{formatDate(provider.createdAt)}</strong>
+          </li>
+          <li>
+            <span>Approuvé le</span>
+            <strong>{formatDate(provider.approvedAt)}</strong>
+          </li>
+          <li>
+            <span>Tarif indicatif</span>
+            <strong>{provider.indicativePrice ?? "—"}</strong>
           </li>
         </ul>
       </section>
@@ -149,155 +133,98 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
       <div className="provider-detail-grid">
         <div className="provider-detail-main">
           <section className="panel provider-section">
-            <header className="provider-section-head">
-              <h2>Coordonnées</h2>
-            </header>
+            <header className="provider-section-head"><h2>Profil</h2></header>
             <div className="info-grid">
-              <InfoItem label="E-mail" value={provider.contact.email} href={`mailto:${provider.contact.email}`} />
-              <InfoItem
-                label="Téléphone"
-                value={provider.contact.phone ?? "Non renseigné"}
-                href={provider.contact.phone ? `tel:${provider.contact.phone}` : undefined}
-              />
-              <InfoItem
-                label="E-mail vérifié"
-                value={provider.contact.emailVerifiedAt ? formatDate(provider.contact.emailVerifiedAt) : "Non vérifié"}
-              />
-              <InfoItem
-                label="Téléphone vérifié"
-                value={provider.contact.phoneVerifiedAt ? formatDate(provider.contact.phoneVerifiedAt) : "Non vérifié"}
-              />
-            </div>
-            {provider.contact.accountStatus !== "ACTIVE" && (
-              <p className="form-message form-warning provider-inline-note">
-                Compte inactif : le profil ne sera pas visible tant que le compte n’est pas réactivé.
-              </p>
-            )}
-          </section>
-
-          <section className="panel provider-section">
-            <header className="provider-section-head">
-              <h2>Zone & présentation</h2>
-            </header>
-            <div className="location-highlight">
-              <IconPin className="location-highlight-icon" />
-              <div>
-                <strong>{locationLabel}</strong>
-                <span>Fuseau horaire {provider.timeZone}</span>
-              </div>
+              <InfoItem label="Catégorie" value={provider.categoryLabel} />
+              <InfoItem label="Zone d’intervention" value={provider.zone} />
+              <InfoItem label="Contact" value={provider.contact} />
+              <InfoItem label="Identifiant Yeria" value={provider.yeriaSub} />
             </div>
             <p className="provider-description">
-              {provider.description?.trim() || "Aucune présentation renseignée pour ce profil."}
+              {provider.description.trim() || "Aucune présentation renseignée."}
             </p>
-            {provider.addresses.length > 0 && (
-              <ul className="address-cards">
-                {provider.addresses.map((address) => (
-                  <li key={address.id} className="address-card">
-                    <strong>{address.label || (address.isDefault ? "Adresse principale" : "Adresse")}</strong>
-                    <span>{[address.street, address.neighborhood, address.city].filter(Boolean).join(", ")}</span>
-                    {address.latitude !== null && address.longitude !== null && (
-                      <a className="quiet-link" href={mapUrl(address.latitude, address.longitude)} target="_blank" rel="noreferrer">
-                        Ouvrir sur la carte
-                      </a>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
           </section>
 
           <section className="panel provider-section">
-            <header className="provider-section-head">
-              <h2>Prestations</h2>
-              <span className="count-badge">{provider.serviceCount}</span>
-            </header>
-            {provider.services.length === 0 && (
-              <p className="empty-state panel-empty">Aucune prestation enregistrée.</p>
-            )}
-            {provider.services.length > 0 && (
-              <div className="table-scroll">
-                <table className="table-console">
-                  <thead>
-                    <tr>
-                      <th scope="col">Prestation</th>
-                      <th scope="col">Statut</th>
-                      <th scope="col">Tarif</th>
-                      <th scope="col" className="hide-sm">Lieu</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {provider.services.map((service) => (
-                      <tr key={service.id}>
-                        <td>
-                          <strong>{service.title}</strong>
-                          <span className="table-subtext">{service.categoryName}</span>
-                        </td>
-                        <td><ServiceBadge status={service.status} /></td>
-                        <td>{formatMoney(service.price, service.currency, service.pricingType)}</td>
-                        <td className="hide-sm">{service.city ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <header className="provider-section-head"><h2>Services proposés</h2></header>
+            <p className="provider-description">{provider.services}</p>
+          </section>
+
+          <section className="panel provider-section">
+            <header className="provider-section-head"><h2>Références médias</h2></header>
+            {mediaRefs.length === 0 ? (
+              <p className="empty-state">Aucun média référencé.</p>
+            ) : (
+              <ul className="address-cards">
+                {mediaRefs.map((reference, index) => (
+                  <li key={`${reference}-${index}`} className="address-card">{reference}</li>
+                ))}
+              </ul>
             )}
           </section>
         </div>
 
         <aside className="panel provider-decision">
-          <header className="provider-section-head">
-            <h2>Décision</h2>
-          </header>
-          {canReview && (
+          <header className="provider-section-head"><h2>Décision</h2></header>
+          {canReview ? (
             <>
               <p className="provider-decision-text">
-                Cette demande est en attente. Une validation rend le prestataire visible dans sa zone.
+                Cette candidature est en attente de modération.
               </p>
               <div className="provider-decision-actions">
                 <button type="button" className="success-button success-button-block" onClick={() => openDecision("VERIFY")}>
-                  Valider le dossier
+                  Approuver le profil
                 </button>
                 <button type="button" className="ghost-danger-button ghost-danger-button-block" onClick={() => openDecision("REJECT")}>
-                  Refuser la demande
+                  Refuser la candidature
                 </button>
               </div>
             </>
-          )}
-          {!canReview && (
+          ) : (
             <p className="provider-decision-text">
-              {provider.status === "VERIFIED" && `Profil validé le ${formatDate(provider.verifiedAt)}.`}
-              {provider.status === "REJECTED" && "Cette demande a été refusée."}
-              {provider.status === "SUSPENDED" && "Profil suspendu : la validation ne s’applique pas ici."}
+              {provider.status === "APPROVED" && "Ce profil est approuvé."}
+              {provider.status === "REJECTED" && "Cette candidature a été refusée."}
+              {provider.status === "SUSPENDED" && "Ce profil est suspendu."}
+              {provider.status === "DRAFT" && "Ce profil est encore un brouillon."}
+              {provider.status === "ARCHIVED" && "Ce profil est archivé."}
             </p>
           )}
-          {provider.verificationNotes && (
-            <blockquote className="note-box">{provider.verificationNotes}</blockquote>
-          )}
           <dl className="provider-timeline">
-            <div>
-              <dt>Demande reçue</dt>
-              <dd>{formatDate(provider.createdAt)}</dd>
-            </div>
-            <div>
-              <dt>Dernière mise à jour</dt>
-              <dd>{formatDate(provider.updatedAt)}</dd>
-            </div>
+            <div><dt>Créé le</dt><dd>{formatDate(provider.createdAt)}</dd></div>
+            <div><dt>Mis à jour le</dt><dd>{formatDate(provider.updatedAt)}</dd></div>
           </dl>
         </aside>
       </div>
 
+      <section className="panel provider-section">
+        <header className="provider-section-head"><h2>Historique de modération</h2></header>
+        {provider.moderationDecisions.length === 0 ? (
+          <p className="empty-state">Aucune décision enregistrée.</p>
+        ) : (
+          <ul className="address-cards">
+            {provider.moderationDecisions.map((item) => (
+              <li key={item.id} className="address-card">
+                <strong>{decisionLabel(item.decision)}</strong>
+                <span>{formatDate(item.createdAt)} · {item.adminUsername}</span>
+                {item.reason && <span>{item.reason}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <ConfirmDialog
         open={decision !== null}
-        title={decision === "REJECT" ? "Refuser la demande" : "Valider le prestataire"}
+        title={decision === "REJECT" ? "Refuser la candidature" : "Approuver le profil"}
         description={
           decision === "REJECT"
-            ? "Le profil reste enregistré, mais il ne sera pas proposé aux clients."
-            : `${provider.businessName} pourra être trouvé par les clients de ${provider.city}.`
+            ? "Le profil restera enregistré, mais ne sera pas visible publiquement."
+            : `${provider.displayName} pourra être visible dans la recherche publique.`
         }
-        confirmLabel={decision === "REJECT" ? "Refuser la demande" : "Valider le prestataire"}
+        confirmLabel={decision === "REJECT" ? "Refuser" : "Approuver"}
         tone={decision === "REJECT" ? "danger" : "primary"}
         isSubmitting={isSubmitting}
-        confirmDisabled={decision === "REJECT" && notes.trim().length < 3}
+        confirmDisabled={decision === "REJECT" && rejectNeedsNote}
         error={dialogError}
         onCancel={() => setDecision(null)}
         onConfirm={submitDecision}
@@ -325,23 +252,26 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
   }
 }
 
-function InfoItem({
-  label,
-  value,
-  href,
-}: {
-  label: string;
-  value: string;
-  href?: string;
-}) {
+function getMediaReferences(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function decisionLabel(decision: string): string {
+  const labels: Record<string, string> = {
+    APPROVE: "Profil approuvé",
+    REJECT: "Candidature refusée",
+    SUSPEND: "Profil suspendu",
+    REACTIVATE: "Profil réactivé",
+  };
+  return labels[decision] ?? decision;
+}
+
+function InfoItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="info-item">
       <span className="info-item-label">{label}</span>
-      {href ? (
-        <a className="info-item-value quiet-link" href={href}>{value}</a>
-      ) : (
-        <span className="info-item-value">{value}</span>
-      )}
+      <span className="info-item-value">{value || "—"}</span>
     </div>
   );
 }

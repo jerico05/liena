@@ -1,47 +1,44 @@
 import { Prisma, ProviderStatus } from "@prisma/client";
 import { prisma } from "../../config/database";
 
+const providerSummaryStatuses = [
+  ProviderStatus.DRAFT,
+  ProviderStatus.PENDING,
+  ProviderStatus.APPROVED,
+  ProviderStatus.REJECTED,
+  ProviderStatus.SUSPENDED,
+  ProviderStatus.ARCHIVED,
+] as const;
+
 const listSelect = {
   id: true,
-  businessName: true,
-  slug: true,
+  displayName: true,
   status: true,
-  city: true,
-  neighborhood: true,
-  countryCode: true,
+  isActive: true,
+  services: true,
+  zone: true,
+  contact: true,
+  indicativePrice: true,
   createdAt: true,
-  verifiedAt: true,
-  user: {
-    select: {
-      firstName: true,
-      lastName: true,
-      email: true,
-      phone: true,
-      status: true,
-    },
-  },
-  _count: { select: { services: true } },
+  approvedAt: true,
+  category: { select: { label: true } },
 } satisfies Prisma.ProviderProfileSelect;
 
-function mapListItem(row: Prisma.ProviderProfileGetPayload<{ select: typeof listSelect }>) {
+type ProviderListRow = Prisma.ProviderProfileGetPayload<{ select: typeof listSelect }>;
+
+function mapListItem(row: ProviderListRow) {
   return {
-    id: row.id,
-    businessName: row.businessName,
-    slug: row.slug,
+    id: String(row.id),
+    displayName: row.displayName,
+    categoryLabel: row.category.label,
+    services: row.services,
+    zone: row.zone,
+    contact: row.contact,
     status: row.status,
-    city: row.city,
-    neighborhood: row.neighborhood,
-    countryCode: row.countryCode,
+    isActive: row.isActive,
+    indicativePrice: row.indicativePrice?.toString() ?? null,
     createdAt: row.createdAt.toISOString(),
-    verifiedAt: row.verifiedAt?.toISOString() ?? null,
-    serviceCount: row._count.services,
-    contact: {
-      firstName: row.user.firstName,
-      lastName: row.user.lastName,
-      email: row.user.email,
-      phone: row.user.phone,
-      accountStatus: row.user.status,
-    },
+    approvedAt: row.approvedAt?.toISOString() ?? null,
   };
 }
 
@@ -50,7 +47,9 @@ export async function countProvidersByStatus(): Promise<Record<ProviderStatus, n
     by: ["status"],
     _count: { _all: true },
   });
-  const summary = { PENDING: 0, VERIFIED: 0, REJECTED: 0, SUSPENDED: 0 };
+  const summary = Object.fromEntries(
+    providerSummaryStatuses.map((status) => [status, 0]),
+  ) as Record<ProviderStatus, number>;
   for (const row of grouped) summary[row.status] = row._count._all;
   return summary;
 }
@@ -66,9 +65,11 @@ export async function listProviders(query: {
     ...(query.q
       ? {
           OR: [
-            { businessName: { contains: query.q, mode: "insensitive" } },
-            { city: { contains: query.q, mode: "insensitive" } },
-            { user: { email: { contains: query.q, mode: "insensitive" } } },
+            { displayName: { contains: query.q, mode: "insensitive" } },
+            { services: { contains: query.q, mode: "insensitive" } },
+            { zone: { contains: query.q, mode: "insensitive" } },
+            { contact: { contains: query.q, mode: "insensitive" } },
+            { category: { label: { contains: query.q, mode: "insensitive" } } },
           ],
         }
       : {}),
@@ -91,176 +92,77 @@ export async function listProviders(query: {
   };
 }
 
-export async function getProviderDetail(id: string) {
+export async function getProviderDetail(id: number) {
   const profile = await prisma.providerProfile.findUnique({
     where: { id },
     include: {
-      user: {
-        select: {
-          firstName: true,
-          lastName: true,
-          email: true,
-          phone: true,
-          status: true,
-          avatarUrl: true,
-          emailVerifiedAt: true,
-          phoneVerifiedAt: true,
-          createdAt: true,
-        },
-      },
-      services: {
+      category: { select: { label: true } },
+      moderationDecisions: {
         orderBy: { createdAt: "desc" },
         take: 20,
-        select: {
-          id: true,
-          title: true,
-          status: true,
-          pricingType: true,
-          price: true,
-          currency: true,
-          city: true,
-          neighborhood: true,
-          category: { select: { name: true } },
-        },
       },
-      _count: { select: { reviews: true, services: true } },
     },
   });
 
   if (!profile) return null;
 
-  const addresses = await prisma.address.findMany({
-    where: { userId: profile.userId },
-    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
-    select: {
-      id: true,
-      label: true,
-      city: true,
-      neighborhood: true,
-      street: true,
-      countryCode: true,
-      isDefault: true,
-      latitude: true,
-      longitude: true,
-    },
-  });
-
   return {
-    id: profile.id,
-    businessName: profile.businessName,
-    slug: profile.slug,
-    status: profile.status,
-    city: profile.city,
-    neighborhood: profile.neighborhood,
-    countryCode: profile.countryCode,
-    createdAt: profile.createdAt.toISOString(),
-    verifiedAt: profile.verifiedAt?.toISOString() ?? null,
-    updatedAt: profile.updatedAt.toISOString(),
+    ...mapListItem({
+      ...profile,
+      category: profile.category,
+    }),
     description: profile.description,
-    verificationNotes: profile.verificationNotes,
-    timeZone: profile.timeZone,
-    serviceCount: profile._count.services,
-    reviewCount: profile._count.reviews,
-    contact: {
-      firstName: profile.user.firstName,
-      lastName: profile.user.lastName,
-      email: profile.user.email,
-      phone: profile.user.phone,
-      accountStatus: profile.user.status,
-      avatarUrl: profile.user.avatarUrl,
-      emailVerifiedAt: profile.user.emailVerifiedAt?.toISOString() ?? null,
-      phoneVerifiedAt: profile.user.phoneVerifiedAt?.toISOString() ?? null,
-      createdAt: profile.user.createdAt.toISOString(),
-    },
-    services: profile.services.map((service) => ({
-      id: service.id,
-      title: service.title,
-      status: service.status,
-      pricingType: service.pricingType,
-      price: service.price?.toString() ?? null,
-      currency: service.currency,
-      city: service.city,
-      neighborhood: service.neighborhood,
-      categoryName: service.category.name,
-    })),
-    addresses: addresses.map((address) => ({
-      id: address.id,
-      label: address.label,
-      city: address.city,
-      neighborhood: address.neighborhood,
-      street: address.street,
-      countryCode: address.countryCode,
-      isDefault: address.isDefault,
-      latitude: address.latitude ? Number(address.latitude) : null,
-      longitude: address.longitude ? Number(address.longitude) : null,
+    yeriaSub: profile.yeriaSub,
+    mediaRefs: profile.mediaRefs,
+    updatedAt: profile.updatedAt.toISOString(),
+    moderationDecisions: profile.moderationDecisions.map((decision) => ({
+      id: String(decision.id),
+      adminUsername: decision.adminUsername,
+      adminYeriaSub: decision.adminYeriaSub,
+      decision: decision.decision,
+      reason: decision.reason,
+      createdAt: decision.createdAt.toISOString(),
     })),
   };
 }
 
 export async function reviewProvider(input: {
-  id: string;
+  id: number;
   decision: "VERIFY" | "REJECT";
   notes?: string;
+  adminUsername: string;
 }) {
-  const existing = await prisma.providerProfile.findUnique({
-    where: { id: input.id },
-    select: { id: true, status: true },
+  return prisma.$transaction(async (transaction) => {
+    const newStatus =
+      input.decision === "VERIFY" ? ProviderStatus.APPROVED : ProviderStatus.REJECTED;
+    const update = await transaction.providerProfile.updateMany({
+      where: { id: input.id, status: ProviderStatus.PENDING },
+      data: {
+        status: newStatus,
+        isActive: input.decision === "VERIFY",
+        approvedAt: input.decision === "VERIFY" ? new Date() : null,
+      },
+    });
+
+    if (update.count === 0) {
+      const existing = await transaction.providerProfile.findUnique({
+        where: { id: input.id },
+        select: { id: true },
+      });
+      return { kind: existing ? ("already_reviewed" as const) : ("not_found" as const) };
+    }
+
+    await transaction.moderationDecision.create({
+      data: {
+        providerProfileId: input.id,
+        adminUsername: input.adminUsername,
+        decision: input.decision === "VERIFY" ? "APPROVE" : "REJECT",
+        reason: input.notes ?? null,
+      },
+    });
+
+    return { kind: "ok" as const };
   });
-  if (!existing) return { kind: "not_found" as const };
-  if (existing.status !== ProviderStatus.PENDING) return { kind: "already_reviewed" as const };
-
-  const updated = await prisma.providerProfile.update({
-    where: { id: input.id },
-    data: {
-      status: input.decision === "VERIFY" ? ProviderStatus.VERIFIED : ProviderStatus.REJECTED,
-      verificationNotes: input.notes ?? null,
-      verifiedAt: input.decision === "VERIFY" ? new Date() : null,
-    },
-    select: listSelect,
-  });
-
-  return { kind: "ok" as const, provider: mapListItem(updated) };
-}
-
-const cardSelect = {
-  id: true,
-  businessName: true,
-  status: true,
-  city: true,
-  neighborhood: true,
-  countryCode: true,
-  createdAt: true,
-  updatedAt: true,
-  verifiedAt: true,
-  user: { select: { firstName: true, lastName: true } },
-} satisfies Prisma.ProviderProfileSelect;
-
-export type DashboardCard = {
-  id: string;
-  businessName: string;
-  status: ProviderStatus;
-  city: string;
-  neighborhood: string | null;
-  countryCode: string;
-  createdAt: string;
-  updatedAt: string;
-  verifiedAt: string | null;
-  contact: { firstName: string; lastName: string };
-};
-
-function mapCard(row: Prisma.ProviderProfileGetPayload<{ select: typeof cardSelect }>): DashboardCard {
-  return {
-    id: row.id,
-    businessName: row.businessName,
-    status: row.status,
-    city: row.city,
-    neighborhood: row.neighborhood,
-    countryCode: row.countryCode,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-    verifiedAt: row.verifiedAt?.toISOString() ?? null,
-    contact: { firstName: row.user.firstName, lastName: row.user.lastName },
-  };
 }
 
 export async function getDashboardData() {
@@ -268,17 +170,9 @@ export async function getDashboardData() {
   const now = Date.now();
   const weekAgo = new Date(now - 7 * dayMs);
   const staleBefore = new Date(now - 3 * dayMs);
-
-  const summaryRows = await countProvidersByStatus();
-  const summary = {
-    pending: summaryRows.PENDING,
-    verified: summaryRows.VERIFIED,
-    rejected: summaryRows.REJECTED,
-    suspended: summaryRows.SUSPENDED,
-  };
-
-  const [incomingThisWeek, stalePending, queue, decisions, cityGroups, pendingCityGroups] =
+  const [summary, incomingThisWeek, stalePending, queue, decisions, zoneGroups] =
     await Promise.all([
+      countProvidersByStatus(),
       prisma.providerProfile.count({ where: { createdAt: { gte: weekAgo } } }),
       prisma.providerProfile.count({
         where: { status: ProviderStatus.PENDING, createdAt: { lt: staleBefore } },
@@ -287,42 +181,39 @@ export async function getDashboardData() {
         where: { status: ProviderStatus.PENDING },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         take: 8,
-        select: cardSelect,
+        select: listSelect,
       }),
       prisma.providerProfile.findMany({
-        where: { status: { in: [ProviderStatus.VERIFIED, ProviderStatus.REJECTED] } },
+        where: { status: { in: [ProviderStatus.APPROVED, ProviderStatus.REJECTED] } },
         orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
         take: 8,
-        select: cardSelect,
+        select: listSelect,
       }),
       prisma.providerProfile.groupBy({
-        by: ["city", "countryCode"],
+        by: ["zone"],
         _count: { _all: true },
-        orderBy: { _count: { city: "desc" } },
+        orderBy: { _count: { zone: "desc" } },
         take: 8,
-      }),
-      prisma.providerProfile.groupBy({
-        by: ["city", "countryCode"],
-        where: { status: ProviderStatus.PENDING },
-        _count: { _all: true },
       }),
     ]);
 
-  const pendingByCity = new Map(
-    pendingCityGroups.map((row) => [`${row.countryCode}:${row.city}`, row._count._all]),
-  );
+  const pendingZones = await prisma.providerProfile.groupBy({
+    by: ["zone"],
+    where: { status: ProviderStatus.PENDING },
+    _count: { _all: true },
+  });
+  const pendingByZone = new Map(pendingZones.map((row) => [row.zone, row._count._all]));
 
   return {
     summary,
     incomingThisWeek,
     stalePending,
-    queue: queue.map(mapCard),
-    recentDecisions: decisions.map(mapCard),
-    cities: cityGroups.map((row) => ({
-      city: row.city,
-      countryCode: row.countryCode,
+    queue: queue.map(mapListItem),
+    recentDecisions: decisions.map(mapListItem),
+    zones: zoneGroups.map((row) => ({
+      zone: row.zone,
       total: row._count._all,
-      pending: pendingByCity.get(`${row.countryCode}:${row.city}`) ?? 0,
+      pending: pendingByZone.get(row.zone) ?? 0,
     })),
   };
 }

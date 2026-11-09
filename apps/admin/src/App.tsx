@@ -42,7 +42,7 @@ export function App() {
   const refreshPendingCount = useCallback(() => {
     if (!username) return;
     apiRequest<DashboardResponse>("/dashboard")
-      .then((body) => setPendingCount(body.data.summary.pending))
+      .then((body) => setPendingCount(body.data.summary.PENDING))
       .catch(() => setPendingCount(0));
   }, [username]);
 
@@ -96,11 +96,20 @@ export function App() {
         : view.name === "detail" && view.from === "validations"
           ? "validations"
           : "dashboard";
+  const pageTitle =
+    view.name === "detail"
+      ? "Fiche prestataire"
+      : view.name === "validations"
+        ? "Validations"
+        : view.name === "providers"
+          ? "Prestataires"
+          : "Tableau de bord";
 
   return (
     <AdminShell
       username={username}
       section={section}
+      title={pageTitle}
       pendingCount={pendingCount}
       onLogout={handleLogout}
       onOpenDashboard={() => {

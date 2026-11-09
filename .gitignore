@@ -12,3 +12,4 @@ apps/api/dist/
 
 # Local Netlify folder
 .netlify
+.neon
