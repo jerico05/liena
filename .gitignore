@@ -14,3 +14,4 @@ apps/api/dist/
 # Local deployment and Neon configuration
 .netlify
 .neon
+.agents/
