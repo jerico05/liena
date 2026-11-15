@@ -5,9 +5,9 @@ Les noms SQL sont en `snake_case`; Prisma expose les champs en `camelCase`. Les 
 | Domaine | Tables Prisma/SQL | Rôle et relations essentielles |
 |---|---|---|
 | Catalogue | `Category` / `categories` | Catégories actives et ordre d'affichage; une catégorie peut regrouper plusieurs profils prestataires. |
-| Prestataires | `ProviderProfile` / `provider_profiles` | Profil métier lié à un `yeria_sub` unique et à une catégorie; conserve services, zone, contact, médias et statut. |
+| Prestataires | `ProviderProfile` / `provider_profiles` | Profil métier (`displayName`, `categoryId`, `services`, `zone`, `description`, `contact`, `indicativePrice?`, `mediaRefs?`, GPS) — formulaire Yeria « Devenir prestataire ». |
 | Modération | `ModerationDecision` / `moderation_decisions` | Décisions de validation, refus, suspension ou réactivation, avec motif et administrateur auteur. |
-| Demandes | `ServiceRequest` / `service_requests` | Demande d'un client identifié par Yeria vers un profil prestataire, avec description, zone et statut. |
+| Demandes | `ServiceRequest` / `service_requests` | Demande client (`description`, `zone?`, `clientContact`, **`location_lat` / `location_lon` / `location_accuracy`** obligatoires via GPS) — formulaire Yeria « Demander un service ». Schéma : `@liena/shared-schemas`. |
 | Historique | `RequestEvent` / `request_events` | Historique des changements de statut d'une demande, acteur Yeria et note éventuelle. |
 
 ## Contraintes et conventions

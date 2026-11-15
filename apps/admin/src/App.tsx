@@ -73,7 +73,14 @@ export function App() {
   if (!isReady) {
     return (
       <main className="page-shell">
-        <p className="loading-message">Vérification de la session…</p>
+        <div className="ambient ambient-blue" aria-hidden="true" />
+        <div className="ambient ambient-teal" aria-hidden="true" />
+        <div className="auth-card loading-card" aria-busy="true" aria-live="polite">
+          <div className="brand brand-compact">
+            <img className="brand-logo" src="/assets/liena-logo.png" alt="" />
+          </div>
+          <p className="loading-message">Vérification de la session…</p>
+        </div>
       </main>
     );
   }

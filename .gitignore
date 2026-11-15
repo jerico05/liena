@@ -6,10 +6,19 @@ coverage/
 .env
 .env.*
 !.env.example
-!.env.docker.example
+
+# Clés Yeria (ne pas versionner la clé privée)
+service_private.pem
+**/service_private.pem
 
 apps/admin/dist/
-apps/api/dist/
+backend/api/dist/
+backend/mobile/dist/
+apps/api/
+apps/mobile/
+
+# Outils / IDE (hors livrable)
+skills-lock.json
 
 # Local deployment and Neon configuration
 .netlify

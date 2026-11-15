@@ -1,0 +1,17 @@
+# Site Netlify 1 — Console admin (SPA uniquement)
+# Dans Netlify : Site configuration → Build → « Configuration file » = netlify/admin.toml
+# Variable de build obligatoire : VITE_API_URL = https://VOTRE-SITE-BACKEND.netlify.app/api/v1
+
+[build]
+  command = "npm ci && npm run build:admin"
+  publish = "apps/admin/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Surcharger dans l’UI Netlify (URL complète du site backend) :
+  # VITE_API_URL = "https://liena-api.netlify.app/api/v1"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

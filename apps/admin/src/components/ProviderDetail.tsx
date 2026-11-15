@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import { ApiError, apiRequest, isAbortError } from "../lib/api";
 import { formatDate, initials } from "../lib/format";
-import type { ProviderDetail as ProviderDetailData, ProviderDetailResponse } from "../lib/types";
+import type {
+  ProviderDetail as ProviderDetailData,
+  ProviderDetailResponse,
+  ProviderMediaRef,
+} from "../lib/types";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { IconPin } from "./Icons";
 import { StatusBadge } from "./StatusBadge";
 
 type ProviderDetailProps = {
@@ -20,6 +25,8 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
   const [isLoading, setIsLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const [decision, setDecision] = useState<Decision | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
   const [notes, setNotes] = useState("");
   const [dialogError, setDialogError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,6 +52,33 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
       });
     return () => controller.abort();
   }, [providerId, reloadKey, onUnauthorized]);
+
+  async function submitDelete() {
+    if (deleteReason.trim().length < 3) return;
+    setDialogError("");
+    setIsSubmitting(true);
+    try {
+      await apiRequest(`/providers/${providerId}/delete`, {
+        method: "POST",
+        body: JSON.stringify({ reason: deleteReason.trim() }),
+      });
+      onReviewed("Le profil prestataire a été supprimé définitivement.");
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.status === 401) {
+        onUnauthorized();
+        return;
+      }
+      if (caught instanceof ApiError && caught.status === 409) {
+        setDeleteOpen(false);
+        setError(caught.message);
+        setReloadKey((current) => current + 1);
+        return;
+      }
+      setDialogError(caught instanceof ApiError ? caught.message : "La suppression a échoué.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   async function submitDecision() {
     if (!decision) return;
@@ -80,7 +114,13 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
     }
   }
 
-  if (isLoading && !provider) return <p className="empty-state panel-empty">Chargement de la fiche…</p>;
+  if (isLoading && !provider) {
+    return (
+      <div className="content-loading panel">
+        <p>Chargement de la fiche…</p>
+      </div>
+    );
+  }
   if (!provider) {
     return (
       <section className="panel">
@@ -91,8 +131,10 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
   }
 
   const canReview = provider.status === "PENDING";
+  const canDelete = provider.status === "APPROVED";
   const rejectNeedsNote = notes.trim().length < 3;
   const mediaRefs = getMediaReferences(provider.mediaRefs);
+  const mapsUrl = buildMapsUrl(provider.locationLat, provider.locationLon);
 
   return (
     <>
@@ -151,13 +193,43 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
           </section>
 
           <section className="panel provider-section">
-            <header className="provider-section-head"><h2>Références médias</h2></header>
-            {mediaRefs.length === 0 ? (
-              <p className="empty-state">Aucun média référencé.</p>
+            <header className="provider-section-head"><h2>Localisation GPS</h2></header>
+            {provider.locationLat && provider.locationLon ? (
+              <div className="location-highlight provider-inline-note">
+                <IconPin className="location-highlight-icon" aria-hidden="true" />
+                <div>
+                  <strong>
+                    {provider.locationLat}, {provider.locationLon}
+                  </strong>
+                  <span>
+                    {provider.locationAccuracy
+                      ? `Précision ~${provider.locationAccuracy} m`
+                      : "Précision non renseignée"}
+                  </span>
+                  {mapsUrl && (
+                    <a className="text-link" href={mapsUrl} target="_blank" rel="noreferrer">
+                      Ouvrir dans Google Maps
+                    </a>
+                  )}
+                </div>
+              </div>
             ) : (
-              <ul className="address-cards">
+              <p className="empty-state panel-empty">Position non enregistrée.</p>
+            )}
+          </section>
+
+          <section className="panel provider-section">
+            <header className="provider-section-head"><h2>Photos</h2></header>
+            {mediaRefs.length === 0 ? (
+              <p className="empty-state">Aucune photo fournie.</p>
+            ) : (
+              <ul className="provider-media-grid">
                 {mediaRefs.map((reference, index) => (
-                  <li key={`${reference}-${index}`} className="address-card">{reference}</li>
+                  <li key={reference.publicId ?? `${reference.url}-${index}`}>
+                    <a href={reference.url} target="_blank" rel="noreferrer">
+                      <img src={reference.url} alt={`Photo ${index + 1}`} loading="lazy" />
+                    </a>
+                  </li>
                 ))}
               </ul>
             )}
@@ -181,13 +253,30 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
               </div>
             </>
           ) : (
-            <p className="provider-decision-text">
-              {provider.status === "APPROVED" && "Ce profil est approuvé."}
-              {provider.status === "REJECTED" && "Cette candidature a été refusée."}
-              {provider.status === "SUSPENDED" && "Ce profil est suspendu."}
-              {provider.status === "DRAFT" && "Ce profil est encore un brouillon."}
-              {provider.status === "ARCHIVED" && "Ce profil est archivé."}
-            </p>
+            <>
+              <p className="provider-decision-text">
+                {provider.status === "APPROVED" && "Ce profil est approuvé et visible côté clients."}
+                {provider.status === "REJECTED" && "Cette candidature a été refusée."}
+                {provider.status === "SUSPENDED" && "Ce profil est suspendu."}
+                {provider.status === "DRAFT" && "Ce profil est encore un brouillon."}
+                {provider.status === "ARCHIVED" && "Ce profil est archivé."}
+              </p>
+              {canDelete && (
+                <div className="provider-decision-actions">
+                  <button
+                    type="button"
+                    className="ghost-danger-button ghost-danger-button-block"
+                    onClick={() => {
+                      setDeleteReason("");
+                      setDialogError("");
+                      setDeleteOpen(true);
+                    }}
+                  >
+                    Supprimer le profil
+                  </button>
+                </div>
+              )}
+            </>
           )}
           <dl className="provider-timeline">
             <div><dt>Créé le</dt><dd>{formatDate(provider.createdAt)}</dd></div>
@@ -212,6 +301,32 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
           </ul>
         )}
       </section>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Supprimer le profil prestataire"
+        description={`Cette action est irréversible. ${provider.displayName} disparaîtra de la recherche publique et le dossier sera effacé de la base.`}
+        confirmLabel="Supprimer définitivement"
+        tone="danger"
+        isSubmitting={isSubmitting}
+        confirmDisabled={deleteReason.trim().length < 3}
+        error={dialogError}
+        onCancel={() => setDeleteOpen(false)}
+        onConfirm={submitDelete}
+      >
+        <div className="field dialog-field">
+          <label htmlFor="delete-reason">Motif de la suppression</label>
+          <textarea
+            id="delete-reason"
+            value={deleteReason}
+            maxLength={2000}
+            required
+            placeholder="Ex. doublon, demande du prestataire, fraude…"
+            onChange={(event) => setDeleteReason(event.target.value)}
+          />
+          {deleteReason.trim().length < 3 && <span className="hint">Trois caractères minimum.</span>}
+        </div>
+      </ConfirmDialog>
 
       <ConfirmDialog
         open={decision !== null}
@@ -252,9 +367,29 @@ export function ProviderDetail({ providerId, onBack, onReviewed, onUnauthorized 
   }
 }
 
-function getMediaReferences(value: unknown): string[] {
+function getMediaReferences(value: unknown): ProviderMediaRef[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((item): item is string => typeof item === "string");
+  return value
+    .map((item): ProviderMediaRef | null => {
+      if (typeof item === "string" && item.startsWith("http")) return { url: item };
+      if (item && typeof item === "object" && "url" in item) {
+        const record = item as Record<string, unknown>;
+        if (typeof record.url !== "string") return null;
+        return {
+          url: record.url,
+          publicId: typeof record.publicId === "string" ? record.publicId : undefined,
+          width: typeof record.width === "number" ? record.width : undefined,
+          height: typeof record.height === "number" ? record.height : undefined,
+        };
+      }
+      return null;
+    })
+    .filter((item): item is ProviderMediaRef => item !== null);
+}
+
+function buildMapsUrl(lat: string | null, lon: string | null): string | null {
+  if (!lat || !lon) return null;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lat},${lon}`)}`;
 }
 
 function decisionLabel(decision: string): string {

@@ -6,6 +6,16 @@ let netlifyHandler:
   | ((request: Request, context: Context) => Promise<Response>)
   | undefined;
 
+async function bootstrapHandler() {
+  let createApp: () => import("express").Express;
+  try {
+    ({ createApp } = await import("../../backend/api/dist/app.js"));
+  } catch {
+    ({ createApp } = await import("../../backend/api/src/app"));
+  }
+  return withLambda(serverless(createApp()));
+}
+
 export default async (request: Request, context: Context): Promise<Response> => {
   const databaseUrl = Netlify.env.get("DATABASE_URL");
   if (!databaseUrl) {
@@ -15,15 +25,33 @@ export default async (request: Request, context: Context): Promise<Response> => 
   const origin = new URL(request.url).origin;
   process.env.DATABASE_URL = databaseUrl;
   process.env.NODE_ENV ??= "production";
-  process.env.APP_URL ??= origin;
-  process.env.CORS_ORIGIN ??= origin;
+  process.env.APP_URL ??= Netlify.env.get("PUBLIC_API_URL") ?? origin;
+  process.env.PUBLIC_API_URL ??= process.env.APP_URL;
+  process.env.CORS_ORIGIN ??= Netlify.env.get("CORS_ORIGIN") ?? origin;
+  process.env.TRUST_PROXY_HOPS ??= "1";
 
   if (!netlifyHandler) {
-    const { createApp } = await import("../../apps/api/src/app");
-    netlifyHandler = withLambda(serverless(createApp()));
+    netlifyHandler = await bootstrapHandler();
   }
 
   return netlifyHandler(request, context);
 };
 
-export const config: Config = { path: ["/api/*", "/health"] };
+/** Déclaration explicite : la fonction doit recevoir les routes Yeria (pas seulement /api/v1). */
+export const config: Config = {
+  path: [
+    "/health",
+    "/",
+    "/home",
+    "/map",
+    "/search",
+    "/become-provider",
+    "/browse",
+    "/browse/*",
+    "/screens",
+    "/screens/*",
+    "/assets/*",
+    "/api/v1/*",
+    "/providers/*",
+  ],
+};

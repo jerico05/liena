@@ -16,6 +16,12 @@ type AdminShellProps = {
   children: ReactNode;
 };
 
+const sectionLabels: Record<ConsoleSection, string> = {
+  dashboard: "Tableau de bord",
+  validations: "Validations",
+  providers: "Prestataires",
+};
+
 export function AdminShell({
   username,
   section,
@@ -29,7 +35,7 @@ export function AdminShell({
 }: AdminShellProps) {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const displayName = username.length > 14 ? `${username.slice(0, 14)}…` : username;
+  const displayName = username.length > 18 ? `${username.slice(0, 18)}…` : username;
 
   async function handleLogout() {
     setError("");
@@ -45,11 +51,13 @@ export function AdminShell({
 
   return (
     <div className="console-layout">
-      <aside className="console-sidebar">
+      <aside className="console-sidebar" aria-label="Menu latéral">
         <div className="sidebar-brand">
           <img className="brand-logo" src="/assets/liena-logo.png" alt="" />
-          <span className="sidebar-brand-text">liena</span>
-          <span className="console-tag">Console</span>
+          <div className="sidebar-brand-copy">
+            <span className="sidebar-brand-text">liena</span>
+            <span className="console-tag">Console admin</span>
+          </div>
         </div>
 
         <nav className="sidebar-nav" aria-label="Navigation principale">
@@ -57,7 +65,6 @@ export function AdminShell({
             type="button"
             className={section === "dashboard" ? "sidebar-link active" : "sidebar-link"}
             aria-current={section === "dashboard" ? "page" : undefined}
-            aria-label="Tableau de bord"
             onClick={onOpenDashboard}
           >
             <IconLayout className="sidebar-icon" />
@@ -67,7 +74,6 @@ export function AdminShell({
             type="button"
             className={section === "validations" ? "sidebar-link active" : "sidebar-link"}
             aria-current={section === "validations" ? "page" : undefined}
-            aria-label={`Validations${pendingCount > 0 ? `, ${pendingCount} en attente` : ""}`}
             onClick={onOpenValidations}
           >
             <IconClipboard className="sidebar-icon" />
@@ -78,7 +84,6 @@ export function AdminShell({
             type="button"
             className={section === "providers" ? "sidebar-link active" : "sidebar-link"}
             aria-current={section === "providers" ? "page" : undefined}
-            aria-label="Prestataires"
             onClick={onOpenProviders}
           >
             <IconUsers className="sidebar-icon" />
@@ -89,30 +94,50 @@ export function AdminShell({
         <button
           type="button"
           className="sidebar-logout"
-          aria-label="Déconnexion"
           onClick={handleLogout}
           disabled={isSubmitting}
         >
           <IconLogout className="sidebar-icon" />
-          <span>Déconnexion</span>
+          <span>{isSubmitting ? "Déconnexion…" : "Déconnexion"}</span>
         </button>
       </aside>
 
       <div className="console-main">
         <header className="console-topbar">
-          <h1>{title}</h1>
+          <nav className="topbar-breadcrumb" aria-label="Fil d’Ariane">
+            <span className="topbar-breadcrumb-root">Liena</span>
+            <span className="topbar-breadcrumb-sep" aria-hidden="true">
+              /
+            </span>
+            <span className="topbar-breadcrumb-muted">{sectionLabels[section]}</span>
+            {title !== sectionLabels[section] && (
+              <>
+                <span className="topbar-breadcrumb-sep" aria-hidden="true">
+                  /
+                </span>
+                <span className="topbar-breadcrumb-current">{title}</span>
+              </>
+            )}
+          </nav>
+
           <div className="topbar-user">
-            <span className="topbar-avatar">{displayName.charAt(0).toUpperCase()}</span>
-            <span>
+            <div className="topbar-user-copy">
               <strong>{displayName}</strong>
               <span>Administrateur</span>
+            </div>
+            <span className="topbar-avatar" aria-hidden="true">
+              {displayName.charAt(0).toUpperCase()}
             </span>
           </div>
         </header>
 
         <main className="console-content">
-          {error && <p className="form-message form-error notice" role="alert">{error}</p>}
-          {children}
+          {error && (
+            <p className="form-message form-error notice" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="page-stack">{children}</div>
         </main>
       </div>
     </div>

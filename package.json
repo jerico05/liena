@@ -8,16 +8,20 @@
     "node": "^20.19.0 || ^22.12.0 || ^24.0.0"
   },
   "workspaces": [
-    "apps/*",
+    "apps/admin",
+    "backend/*",
     "packages/*"
   ],
   "scripts": {
     "dev": "npm run dev --workspaces --if-present",
     "dev:api": "npm run dev --workspace @liena/api",
+    "tunnel:ngrok": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/ngrok-api.ps1",
+    "tunnel:ngrok:status": "powershell -NoProfile -Command \"try { (Invoke-RestMethod http://127.0.0.1:4040/api/tunnels).tunnels | ForEach-Object { $_.public_url } } catch { Write-Host 'Aucun agent ngrok sur le port 4040.' }\"",
     "dev:admin": "npm run dev --workspace @liena/admin",
     "admin:dev": "npm run dev:admin",
     "admin:build": "npm run build:admin",
-    "build": "npm run build --workspace @liena/api && npm run build --workspace @liena/admin",
+    "build": "npm run build --workspace @liena/mobile && npm run build --workspace @liena/api && npm run build --workspace @liena/admin",
+    "build:mobile": "npm run build --workspace @liena/mobile",
     "build:api": "npm run build --workspace @liena/api",
     "build:admin": "npm run build --workspace @liena/admin",
     "db:generate": "prisma generate",
@@ -27,7 +31,8 @@
     "db:seed": "prisma db seed",
     "test": "npm run db:validate && npm run test:unit --workspace @liena/api",
     "test:unit": "npm run test:unit --workspace @liena/api",
-    "test:db": "node scripts/test-database.mjs"
+    "test:db": "node scripts/test-database.mjs",
+    "icons:png": "node scripts/convert-icons.mjs"
   },
   "overrides": {
     "deepmerge-ts": "^8.0.0",
@@ -38,6 +43,7 @@
   "devDependencies": {
     "@prisma/client": "7.9.0",
     "prisma": "7.9.0",
+    "sharp": "^0.35.5",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },

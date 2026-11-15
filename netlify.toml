@@ -1,15 +1,16 @@
+# Déploiement Netlify en 2 sites — voir netlify/admin.toml et netlify/backend.toml
+#
+# Site admin déjà existant : passer ce fichier à l’équivalent admin
+# (Build → Configuration file = netlify/admin.toml)
+#
+# Ce fichier racine = alias admin pour compatibilité (même contenu simplifié).
+
 [build]
-  command = "npm run db:generate && npm run build"
+  command = "npm ci && npm run build:admin"
   publish = "apps/admin/dist"
 
 [build.environment]
-  DATABASE_URL_UNPOOLED = "postgresql://build:build@127.0.0.1:5432/build"
-  VITE_API_URL = "/api/v1"
-
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
-  external_node_modules = ["@prisma/client", "@prisma/adapter-pg", "pg"]
+  NODE_VERSION = "22"
 
 [[redirects]]
   from = "/*"

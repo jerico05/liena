@@ -77,18 +77,14 @@ liena
 │       │   ├── config/
 │       │   ├── views/
 │       │   ├── modules/
-│       │   ├── services/
-│       │   ├── actions/
-│       │   ├── validators/
-│       │   ├── utils/
-│       │   └── index.js
-│       ├── tests/
+│       │   ├── config/
+│       │   ├── types/
+│       │   ├── views/
+│       │   └── index.ts
 │       └── package.json
 │
 ├── packages/                    
-│   ├── shared-types/
-│   ├── shared-schemas/
-│   └── shared-utils/
+│   └── shared-schemas/
 │
 ├── docs/
 │   ├── architecture/

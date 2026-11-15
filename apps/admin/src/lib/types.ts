@@ -52,10 +52,20 @@ export type ProviderModerationDecision = {
   createdAt: string;
 };
 
+export type ProviderMediaRef = {
+  url: string;
+  publicId?: string;
+  width?: number;
+  height?: number;
+};
+
 export type ProviderDetail = ProviderListItem & {
   description: string;
   yeriaSub: string;
   mediaRefs: unknown;
+  locationLat: string | null;
+  locationLon: string | null;
+  locationAccuracy: string | null;
   updatedAt: string;
   moderationDecisions: ProviderModerationDecision[];
 };
@@ -74,9 +84,3 @@ export type SessionResponse = { data: { username: string }; csrfToken?: string }
 export type ApiErrorBody = {
   error?: { code?: string; message?: string };
 };
-
-export type ApiMeta = {
-  source?: "mock";
-};
-
-export type WithApiMeta<T> = T & { meta?: ApiMeta };

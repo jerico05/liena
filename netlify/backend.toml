@@ -1,0 +1,116 @@
+# Site Netlify 2 — Backend (API Express + vues @liena/mobile / Yeria)
+# Dans Netlify : Site configuration → Build → « Configuration file » = netlify/backend.toml
+# Pas d’admin ici : URL Yeria = racine de CE site (PUBLIC_API_URL)
+
+[build]
+  command = "npm ci && npm run db:generate && npm run build:mobile && npm run build:api"
+  publish = "public/netlify-backend"
+
+[build.environment]
+  DATABASE_URL_UNPOOLED = "postgresql://build:build@127.0.0.1:5432/build"
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  external_node_modules = ["@prisma/client", "@prisma/adapter-pg", "pg", "sharp"]
+  included_files = [
+    "backend/api/dist/**",
+    "backend/api/assets/**",
+    "backend/mobile/dist/**",
+    "packages/**",
+    "node_modules/.prisma/**",
+    "node_modules/@prisma/**",
+    "prisma/**",
+  ]
+
+[[redirects]]
+  from = "/health"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/screens/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/assets/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/v1/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/providers/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/map"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/search"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/browse"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/browse/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/become-provider"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/home"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/cat-*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/cat-*/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+# Racine et routes Express restantes (POST liena-*, etc.)
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true

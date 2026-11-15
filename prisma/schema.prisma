@@ -50,17 +50,30 @@ model Category {
   @@map("categories")
 }
 
+/// Profil prestataire — champs principaux = formulaire Yeria « Devenir prestataire ».
 model ProviderProfile {
   id              Int           @id @default(autoincrement())
   yeriaSub        String        @unique @map("yeria_sub")
+  /// Form `displayName`
   displayName     String        @map("display_name")
+  /// Form `categoryId`
   categoryId      Int           @map("category_id")
+  /// Form `services`
   services        String        @db.Text
+  /// Form `zone`
   zone            String
+  /// Form `description`
   description     String        @db.Text
+  /// Form `indicativePrice` (optionnel)
   indicativePrice Decimal?      @map("indicative_price") @db.Decimal(12, 2)
+  /// Form `contact`
   contact         String
+  /// Form `portfolioPhotos` (URLs Cloudinary)
   mediaRefs       Json?         @map("media_refs")
+  /// Form `location` (GPS)
+  locationLat     Decimal?      @map("location_lat") @db.Decimal(10, 7)
+  locationLon     Decimal?      @map("location_lon") @db.Decimal(10, 7)
+  locationAccuracy Decimal?     @map("location_accuracy") @db.Decimal(10, 2)
   status          ProviderStatus @default(DRAFT)
   isActive        Boolean       @default(true) @map("is_active")
   createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -92,12 +105,22 @@ model ModerationDecision {
   @@map("moderation_decisions")
 }
 
+/// Demande client — champs = formulaire Yeria « Demander un service ».
 model ServiceRequest {
   id                Int                 @id @default(autoincrement())
   clientYeriaSub    String              @map("client_yeria_sub")
+  /// Routage : `providerProfileId` (URL + champ masqué)
   providerProfileId Int                 @map("provider_profile_id")
+  /// Form `description`
   description       String              @db.Text
+  /// Form `zone` (optionnel)
   zone              String?
+  /// Form `clientContact`
+  clientContact     String              @map("client_contact")
+  /// Form `location` (GPS optionnel)
+  locationLat       Decimal?            @map("location_lat") @db.Decimal(10, 7)
+  locationLon       Decimal?            @map("location_lon") @db.Decimal(10, 7)
+  locationAccuracy  Decimal?            @map("location_accuracy") @db.Decimal(10, 2)
   status            ServiceRequestStatus @default(SENT)
   createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)

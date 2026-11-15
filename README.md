@@ -4,9 +4,9 @@ Liena est un monorepo pour l’API Express, la console d’administration et l�
 
 | App | État |
 |---|---|
-| `apps/api` | API Express avec authentification locale de l’administration et accès Prisma |
+| `backend/api` | API Express (Yeria + `/api/v1`) |
+| `backend/mobile` | Vues Yeria (`@liena/mobile`, compilées dans l’API) |
 | `apps/admin` | Console React de supervision et modération des prestataires |
-| `apps/mobile` | Squelette d’intégration Yeria |
 | `prisma` | Modèle MVP PostgreSQL et migrations |
 
 ## Développement local
@@ -34,7 +34,7 @@ npm run dev:api       # http://localhost:3000
 npm run dev:admin     # http://localhost:5173
 ```
 
-Ouvre <http://localhost:5173> et connecte-toi avec `ADMIN_USERNAME` et `ADMIN_PASSWORD`. En développement, `ADMIN_MOCK_DATA` vaut `true` par défaut. Pour lire les données de Neon `dev`, définis `ADMIN_MOCK_DATA=false` dans `.env`.
+Ouvre <http://localhost:5173> et connecte-toi avec `ADMIN_USERNAME` et `ADMIN_PASSWORD`. L’admin lit les prestataires et le tableau de bord depuis PostgreSQL (`DATABASE_URL`).
 
 `DATABASE_URL` est l’URL poolée utilisée par l’API. `DATABASE_URL_UNPOOLED` est l’URL directe pour Prisma Migrate et le seed. Ne commite jamais `.env`.
 
@@ -44,15 +44,29 @@ Avant toute migration distante, vérifie la branche Neon sélectionnée. Les mig
 
 L’API expose les catégories et profils actifs, ainsi que les routes de profil prestataire et de demandes client/prestataire. Les routes personnelles exigent un jeton Bearer Yeria; le `sub` vérifié sert d’identité et n’est jamais accepté depuis le corps de la requête.
 
-Pour activer l’authentification réelle, configure `YERIA_APP_ID` et `YERIA_SERVICE_ID` dans `.env`. `YERIA_BASE_URL` utilise par défaut `https://yeria.app`; `YERIA_DEV_KEY_ID` et `SERVICE_ED25519_PRIVATE_KEY` sont optionnels et ne doivent pas être partagés ni commités. Sans identifiants Yeria, les routes protégées répondent avec une erreur de configuration au lieu d’accepter une identité non vérifiée.
+Les **vues Yeria** sont dans `backend/mobile`, servies par `backend/api` sous **`GET/POST /screens/*`**. Voir [backend/README.md](./backend/README.md). Déploiement : [docs/deploy/netlify-deux-sites.md](./docs/deploy/netlify-deux-sites.md).
+
+### Tester avec Yeria + ngrok (local)
+
+1. `npm run dev:api` (port 3000).
+2. Crée un domaine sur [ngrok Domains](https://dashboard.ngrok.com/domains), puis `NGROK_TUNNEL_URL=https://....` dans `.env`.
+3. `npm run tunnel:ngrok -- -Force` (relance un tunnel propre sur ton compte).
+4. Copier la même URL dans `APP_URL` et `PUBLIC_API_URL`, et `TRUST_PROXY_HOPS=1`.
+4. Console fournisseur [Yeria](https://yeria.app/providers) : URL du service = cette URL ngrok ; écran d’entrée = `/screens/home`.
+5. Garder `YERIA_BASE_URL=https://yeria.app` (plateforme Yeria, pas l’URL ngrok de ton API).
+
+Pour l’intégration Yeria : place `service_private.pem` et `service_public.pem` à la racine (voir [docs/api/yeria-config.md](./docs/api/yeria-config.md)), puis `YERIA_APP_ID`, `YERIA_SERVICE_ID` et `YERIA_BASE_URL=https://yeria.app` dans `.env`. La clé publique s’enregistre dans la console Yeria ; la privée reste locale et n’est jamais commitée. Sans identité ou sans clé privée, les routes protégées ou `/screens/*` renvoient une erreur de configuration.
 
 Les nouveaux profils sont créés en `DRAFT`, puis soumis à la modération pour passer à `PENDING`. Le parcours utilise les catégories, statuts et identifiants entiers du schéma Jyoss; il n’ajoute pas de migration.
 
-## Netlify
+## Netlify (2 sites recommandé)
 
-Netlify publie l’interface d’administration et route `/api/*` vers une Function qui charge l’application `apps/api`. Configure les variables d’environnement côté Netlify : `DATABASE_URL` (URL poolée Neon), `ADMIN_USERNAME`, `ADMIN_PASSWORD` (au moins 12 caractères en production), ainsi que les valeurs de messagerie si elles sont utilisées. `DATABASE_URL_UNPOOLED` sert uniquement aux opérations Prisma et ne doit pas être exposée au client.
+| Site | Config | Rôle |
+|------|--------|------|
+| **Admin** | `netlify/admin.toml` | SPA uniquement ; `VITE_API_URL` = URL de l’API |
+| **Backend** | `netlify/backend.toml` | API + Yeria (`@liena/mobile` compilé dans la function) |
 
-La variable de build `DATABASE_URL_UNPOOLED` de `netlify.toml` est une URL locale factice utilisée par Prisma pour générer le client; la compilation ne s’y connecte pas. Ne remplace pas cette valeur par un secret. Aucune migration distante n’est exécutée par le build Netlify.
+Guide pas à pas : [docs/deploy/netlify-deux-sites.md](./docs/deploy/netlify-deux-sites.md).
 
 ## Commandes utiles
 

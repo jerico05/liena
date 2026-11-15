@@ -163,7 +163,11 @@ export function ProviderBoard({
           )}
         </div>
 
-        {isLoading && !result && <p className="empty-state panel-empty">Chargement…</p>}
+        {isLoading && !result && (
+          <div className="content-loading">
+            <p>Chargement des prestataires…</p>
+          </div>
+        )}
         {result && result.data.length === 0 && (
           <p className="empty-state panel-empty">Aucun prestataire ne correspond à votre recherche.</p>
         )}
