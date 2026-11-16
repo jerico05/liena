@@ -3,7 +3,7 @@
 # Pas d’admin ici : URL Yeria = racine de CE site (PUBLIC_API_URL)
 
 [build]
-  command = "npm ci && npm run db:generate && npm run build:mobile && npm run build:api"
+  command = "npm ci && npm run db:generate && npm run build:shared-schemas && npm run build:mobile && npm run build:api"
   publish = "public/netlify-backend"
 
 [build.environment]
@@ -18,7 +18,7 @@
     "apps/api/dist/**",
     "apps/api/assets/**",
     "apps/mobile/dist/**",
-    "packages/**",
+    "packages/shared-schemas/dist/**",
     "node_modules/.prisma/**",
     "node_modules/@prisma/**",
     "prisma/**",

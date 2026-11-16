@@ -14,6 +14,7 @@ service_private.pem
 apps/admin/dist/
 apps/api/dist/
 apps/mobile/dist/
+packages/shared-schemas/dist/
 
 # Outils / IDE (hors livrable)
 skills-lock.json
