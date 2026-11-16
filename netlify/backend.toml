@@ -3,7 +3,9 @@
 # Pas d’admin ici : URL Yeria = racine de CE site (PUBLIC_API_URL)
 
 [build]
-  command = "npm ci && npm run db:generate && npm run build:shared-schemas && npm run build:mobile && npm run build:api"
+  # npm install (pas npm ci) : le lockfile généré sous Windows n’inclut pas toujours les
+  # optionalDependencies Linux (@esbuild/*, @img/sharp-*) exigées par npm ci sur Netlify.
+  command = "npm install && npm run db:generate && npm run build:mobile && npm run build:api"
   publish = "public/netlify-backend"
 
 [build.environment]

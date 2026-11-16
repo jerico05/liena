@@ -63,9 +63,9 @@ Les appels admin partent vers le **site B** ; cookies admin restent sur le site 
    | `YERIA_*`, `SERVICE_ED25519_PRIVATE_KEY` | Yeria |
    | `CLOUDINARY_*` | Prod obligatoire |
 
-4. **Build command** (UI) : idéalement laisser vide pour suivre `netlify/backend.toml`, ou coller exactement  
-   `npm ci && npm run db:generate && npm run build:mobile && npm run build:api`  
-   (`prebuild` compile `@liena/shared-schemas` avant mobile/api).
+4. **Build command** (UI) : suivre `netlify/backend.toml`, ou  
+   `npm install && npm run db:generate && npm run build:mobile && npm run build:api`  
+   (éviter `npm ci` si le lockfile est généré sous Windows — optional deps Linux manquantes).
 
 5. Migrations (local, une fois) : `npm run db:migrate:deploy` avec `DATABASE_URL` Neon.
 
