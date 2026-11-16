@@ -23,7 +23,9 @@ Même dépôt Git, **deux projets Netlify**. Base de données : **Neon** ; dev l
 
 Dans chaque site Netlify : **Project configuration → Build & deploy → Build settings → Configuration file**.
 
-> **Piège** : sans fichier explicite, Netlify utilise le `netlify.toml` **à la racine** (= build **admin**). Le site backend doit avoir **`netlify/backend.toml`**, pas le fichier racine.
+> **Piège** : Netlify **fusionne** `netlify.toml` (racine) + le fichier indiqué dans l’UI. Un `[build]` admin à la racine forçait `build:admin` même avec `backend.toml` — la racine n’a plus de `[build]`.
+>
+> Sur le site backend : **Configuration file** = `netlify/backend.toml`, **Functions** = `netlify/functions`. Si la commande admin persiste, ouvre **Build settings** et supprime la **surcharge** du build command dans l’UI (laisser le fichier de config décider).
 
 ---
 

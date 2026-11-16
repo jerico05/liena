@@ -1,15 +1,7 @@
-# ⚠️ Site ADMIN uniquement. Pour l’API / Yeria : Configuration file = netlify/backend.toml
-# (sinon Netlify prend ce fichier par défaut et lance build:admin — pas l’API).
-# Voir docs/deploy/netlify-deux-sites.md
-
-[build]
-  command = "npm ci --include=optional && npm run build:admin"
-  publish = "apps/admin/dist"
-
-[build.environment]
-  NODE_VERSION = "22"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# Netlify fusionne TOUJOURS ce fichier avec « Configuration file ».
+# Ne pas définir [build] ici — sinon le build admin écrase souvent l’API.
+#
+# Site admin  → Configuration file : netlify/admin.toml
+# Site backend → Configuration file : netlify/backend.toml
+#
+# Guide : docs/deploy/netlify-deux-sites.md
