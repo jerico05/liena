@@ -8,10 +8,12 @@ let netlifyHandler:
 
 async function bootstrapHandler() {
   let createApp: () => import("express").Express;
+  // Charger le source en premier pour que esbuild inclue Yeria/sanitize-html au build Lambda.
+  // dist/app.js garde des require() vers node_modules (htmlparser2 ESM → crash sur Netlify).
   try {
-    ({ createApp } = await import("../../apps/api/dist/app.js"));
-  } catch {
     ({ createApp } = await import("../../apps/api/src/app"));
+  } catch {
+    ({ createApp } = await import("../../apps/api/dist/app.js"));
   }
   return withLambda(serverless(createApp()));
 }
