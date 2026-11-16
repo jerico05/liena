@@ -39,7 +39,9 @@
     "deepmerge-ts": "^8.0.0",
     "find-my-way": "^9.7.0",
     "mysql2": "^3.23.1",
-    "valibot": "^1.4.2"
+    "valibot": "^1.4.2",
+    "sanitize-html": "2.13.1",
+    "htmlparser2": "8.0.2"
   },
   "devDependencies": {
     "@prisma/client": "7.9.0",
@@ -53,6 +55,7 @@
     "@neon/env": "^2.1.0",
     "@netlify/aws-lambda-compat": "^2.0.3",
     "@netlify/functions": "^6.0.3",
+    "sanitize-html": "2.13.1",
     "serverless-http": "^4.0.0"
   }
 }
