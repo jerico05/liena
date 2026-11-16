@@ -31,17 +31,15 @@ Dans chaque site Netlify : **Project configuration → Build & deploy → Build 
 
 ## Site A — Admin (existant)
 
-1. **Configuration file** : `netlify/admin.toml` (ou laisser `netlify.toml` racine, équivalent admin seul).
-2. **Variable de build** (obligatoire) :
+Guide détaillé : [admin-netlify.md](./admin-netlify.md).
 
-   | Variable | Exemple |
-   |----------|---------|
-   | `VITE_API_URL` | `https://liena-api.netlify.app/api/v1` |
+1. **Configuration file** : `netlify/admin.toml`.
+2. **Build** : `npm run build:netlify-admin`.
+3. **Variable de build** (obligatoire) : `VITE_API_URL` = `https://VOTRE-BACKEND.netlify.app/api/v1`.
+4. **Pas** de Netlify Functions sur ce site.
+5. Sur le **backend**, `CORS_ORIGIN` = URL exacte de l’admin ; cross-site → `COOKIE_SAME_SITE=none`.
 
-3. **Pas** de Netlify Functions sur ce site.
-4. Redéployer (**Clear cache**) après avoir défini `VITE_API_URL`.
-
-Les appels admin partent vers le **site B** ; cookies admin restent sur le site A.
+Les appels admin partent vers le **site B** ; les cookies de session sont posés sur le domaine **backend** (normale en cross-origin).
 
 ---
 

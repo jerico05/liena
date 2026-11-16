@@ -18,12 +18,22 @@ export default async (request: Request, context: Context): Promise<Response> => 
   }
 
   const origin = new URL(request.url).origin;
+  const corsOrigin = Netlify.env.get("CORS_ORIGIN");
   process.env.DATABASE_URL = databaseUrl;
   process.env.NODE_ENV ??= "production";
   process.env.APP_URL ??= Netlify.env.get("PUBLIC_API_URL") ?? origin;
   process.env.PUBLIC_API_URL ??= process.env.APP_URL;
-  process.env.CORS_ORIGIN ??= Netlify.env.get("CORS_ORIGIN") ?? origin;
+  process.env.CORS_ORIGIN ??= corsOrigin ?? origin;
   process.env.TRUST_PROXY_HOPS ??= "1";
+  // Admin sur un autre domaine Netlify : cookies cross-site → SameSite=None (obligatoire).
+  const cookieSameSite = Netlify.env.get("COOKIE_SAME_SITE");
+  if (cookieSameSite) {
+    process.env.COOKIE_SAME_SITE = cookieSameSite;
+  } else if (corsOrigin && new URL(corsOrigin).origin !== origin) {
+    process.env.COOKIE_SAME_SITE = "none";
+  } else {
+    process.env.COOKIE_SAME_SITE ??= "lax";
+  }
 
   if (!netlifyHandler) {
     netlifyHandler = await bootstrapHandler();
