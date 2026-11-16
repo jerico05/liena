@@ -10,6 +10,10 @@
   NODE_VERSION = "22"
   # Définir dans l’UI : VITE_API_URL = https://VOTRE-BACKEND.netlify.app/api/v1
 
+# L’API est sur le site backend : ne pas bundler netlify/functions (api.mts) ici.
+[functions]
+  directory = "netlify/admin-no-functions"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

@@ -24,7 +24,8 @@ Vérifier : depuis le navigateur, ouvrir
 | **Configuration file** | `netlify/admin.toml` |
 | **Build command** | `npm run build:netlify-admin` (ou laisser le fichier décider) |
 | **Publish** | `apps/admin/dist` |
-| **Functions** | vide / par défaut (**pas** de functions sur l’admin) |
+| **Configuration file** | **`netlify/admin.toml`** (obligatoire — sinon Netlify bundlera `netlify/functions` et le build échouera) |
+| **Functions directory** | `netlify/admin-no-functions` (défini dans `admin.toml`, dossier vide) |
 
 ### Variable de build (critique)
 
