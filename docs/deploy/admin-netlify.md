@@ -43,7 +43,11 @@ Local : `apps/admin/.env.local` avec la même URL pour tester.
 3. Sur le **site admin** : définir `VITE_API_URL`, puis **Clear cache and deploy**.
 4. Ouvrir l’admin → connexion avec `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 
-## 4. Dépannage
+## 4. Build Vite (Netlify)
+
+L’admin utilise `cssMinify: "esbuild"` pour éviter les binaires `lightningcss` manquants sur Linux. Utiliser `npm run build:netlify-admin` (contient `npm install`, pas `npm ci`).
+
+## 5. Dépannage
 
 | Symptôme | Cause probable | Action |
 |----------|----------------|--------|
@@ -52,7 +56,7 @@ Local : `apps/admin/.env.local` avec la même URL pour tester.
 | Login puis 403 CSRF | `COOKIE_SAME_SITE=lax` avec 2 domaines | `COOKIE_SAME_SITE=none` sur backend |
 | 502 function | API backend | Logs function `api` sur le site backend |
 
-## 5. URLs d’exemple (à adapter)
+## 6. URLs d’exemple (à adapter)
 
 - Backend : `https://liena-backend.netlify.app`
 - Admin : `https://liena-admin.netlify.app`

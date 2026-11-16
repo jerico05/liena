@@ -8,6 +8,7 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  # Définir dans l’UI : VITE_API_URL = https://VOTRE-BACKEND.netlify.app/api/v1
 
 [[redirects]]
   from = "/*"
