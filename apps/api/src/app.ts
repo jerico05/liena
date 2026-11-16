@@ -82,6 +82,19 @@ export function createApp(options: { userAuthenticate?: RequestHandler } = {}) {
   app.post("/search", yeriaController.searchSubmit);
   app.post("/map", yeriaController.mapSubmit);
   app.post("/become-provider", userAuthenticate, ...yeriaController.providerOnboardingSubmit);
+
+  app.get("/api/v1", (_request, response) => {
+    response.status(200).json({
+      name: "liena-api",
+      version: "v1",
+      links: {
+        health: "/health",
+        categories: "/api/v1/categories",
+        admin: "/api/v1/admin",
+      },
+    });
+  });
+
   // Yeria : parfois `GET /cat-1` à la racine (URL courante = base du service)
   app.get("/:actionCode/{*trail}", rootYeriaNestedAction);
   app.post("/:actionCode/{*trail}", rootYeriaNestedAction);

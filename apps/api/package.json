@@ -10,7 +10,7 @@
     "prebuild": "npm run build --workspace @liena/shared-schemas",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
-    "test:unit": "node --import tsx --import ./tests/backend-test-env.mjs --test tests/authenticate.unit.test.ts tests/user-http.unit.test.ts tests/prisma-migrations.unit.test.ts tests/admin-auth.unit.test.ts tests/admin-http.unit.test.ts tests/yeria-screens.unit.test.ts"
+    "test:unit": "node --import tsx --import ./tests/backend-test-env.mjs --test tests/authenticate.unit.test.ts tests/user-http.unit.test.ts tests/prisma-migrations.unit.test.ts tests/admin-auth.unit.test.ts tests/admin-http.unit.test.ts tests/yeria-screens.unit.test.ts tests/normalize-pem.unit.test.ts"
   },
   "dependencies": {
     "@liena/mobile": "1.0.0",

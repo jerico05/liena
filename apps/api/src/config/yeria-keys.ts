@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { normalizePemKey } from "./normalize-pem";
 
 const repositoryRoot = path.resolve(__dirname, "../../../..");
 
@@ -12,14 +13,15 @@ export function readKeyFile(configuredPath: string | undefined): string | undefi
   const absolutePath = resolveKeyPath(configuredPath);
   if (!fs.existsSync(absolutePath)) return undefined;
   const content = fs.readFileSync(absolutePath, "utf8").trim();
-  return content.length > 0 ? content : undefined;
+  if (content.length === 0) return undefined;
+  return content.includes("-----BEGIN") ? normalizePemKey(content) : content;
 }
 
 export function resolveServicePrivateKey(input: {
   inlineKey?: string;
   keyPath?: string;
 }): string | undefined {
-  if (input.inlineKey?.trim()) return input.inlineKey.trim();
+  if (input.inlineKey?.trim()) return normalizePemKey(input.inlineKey);
   return readKeyFile(input.keyPath);
 }
 
@@ -27,6 +29,6 @@ export function resolveServicePublicKey(input: {
   inlineKey?: string;
   keyPath?: string;
 }): string | undefined {
-  if (input.inlineKey?.trim()) return input.inlineKey.trim();
+  if (input.inlineKey?.trim()) return normalizePemKey(input.inlineKey);
   return readKeyFile(input.keyPath);
 }

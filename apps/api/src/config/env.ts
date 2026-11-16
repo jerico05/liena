@@ -1,10 +1,6 @@
-import path from "node:path";
-import dotenv from "dotenv";
+import "./load-env";
 import { z } from "zod";
 import { resolveServicePrivateKey, resolveServicePublicKey } from "./yeria-keys";
-
-const repositoryRoot = path.resolve(__dirname, "../../../..");
-dotenv.config({ path: path.join(repositoryRoot, ".env") });
 
 const optionalTrimmedString = z.preprocess(
   (value) => (value === "" ? undefined : value),
@@ -76,6 +72,12 @@ const environmentSchema = z
           context.addIssue({ code: "custom", path: [key], message: "Required in production" });
         }
       }
+      if (!values.YERIA_APP_ID) {
+        context.addIssue({ code: "custom", path: ["YERIA_APP_ID"], message: "Required in production for Yeria" });
+      }
+      if (!values.YERIA_SERVICE_ID) {
+        context.addIssue({ code: "custom", path: ["YERIA_SERVICE_ID"], message: "Required in production for Yeria" });
+      }
     }
   });
 
@@ -101,6 +103,11 @@ export function parseEnvironment(environment: NodeJS.ProcessEnv = process.env): 
     inlineKey: data.SERVICE_ED25519_PUBLIC_KEY,
     keyPath: data.YERIA_SERVICE_PUBLIC_KEY_PATH,
   });
+  if (data.NODE_ENV === "production" && !servicePrivateKey) {
+    throw new Error(
+      "Production requires SERVICE_ED25519_PRIVATE_KEY on Netlify (PEM files are not deployed).",
+    );
+  }
   return Object.freeze({
     ...data,
     servicePrivateKey,

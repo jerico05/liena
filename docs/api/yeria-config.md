@@ -20,7 +20,15 @@ YERIA_SERVICE_PUBLIC_KEY_PATH=service_public.pem
 
 L’API lit ces fichiers au démarrage. **Ne mets pas la clé privée en ligne dans `.env`** (multiligne fragile et risque de fuite).
 
-Alternative temporaire (déconseillée) : `SERVICE_ED25519_PRIVATE_KEY` / `SERVICE_ED25519_PUBLIC_KEY` en une seule ligne dans `.env`.
+**Netlify (obligatoire)** : les fichiers PEM ne sont pas déployés. Définir `SERVICE_ED25519_PRIVATE_KEY` (et optionnellement `SERVICE_ED25519_PUBLIC_KEY`) dans l’UI Netlify :
+
+- éditeur **multiligne** (recommandé), ou
+- une seule ligne avec `\n` entre les lignes, ou
+- une seule ligne **sans** retours (`-----BEGIN…-----MC4…-----END…-----`) — l’API normalise au chargement.
+
+Si les vues (`/`, `/screens/home`) renvoient **500**, vérifier les logs function : erreur du type *public key can’t be parsed* → re-coller la clé ou redeploy après mise à jour du code de normalisation.
+
+En local : `SERVICE_ED25519_PRIVATE_KEY` / `SERVICE_ED25519_PUBLIC_KEY` en une seule ligne, **ou** fichiers PEM à la racine.
 
 ## Variables `.env`
 
@@ -35,10 +43,12 @@ Alternative temporaire (déconseillée) : `SERVICE_ED25519_PRIVATE_KEY` / `SERVI
 
 ## Console Yeria
 
-1. **URL du service** (base uniquement) : `https://xxxx.ngrok-free.dev` — **sans** `/screens/home` à la fin.
+1. **URL du service** : base HTTPS de ton API (ex. `https://liena-backend.netlify.app` ou `https://liena-backend.netlify.app/` si l’UI impose un `/` final — les deux conviennent côté chemin).
 2. **Clé publique** : contenu de `service_public.pem` (Ed25519).
-3. **Écran d’entrée** : `/screens/home` (ou laisse vide / `/` — l’API sert alors la même vue à la racine).
-4. Dans **Accès**, invite ton compte Yeria pour voir le service dans *Mes services privés*.
+3. **Écran d’entrée** : `screens/home` ou `/screens/home` (sans répéter le host dans l’URL du service). Yeria appellera en pratique **`https://…/screens/home`**.
+4. Si tu **ne peux pas** définir l’écran d’entrée (seulement l’URL avec `/`) : l’API sert **la même vue d’accueil** sur `GET /` et sur `GET /screens/home`.
+5. Sur Netlify, aligne **`PUBLIC_API_URL`** / **`APP_URL`** sur la même base que la console (avec ou sans `/` final, mais **cohérent**).
+6. Dans **Accès**, invite ton compte Yeria pour *Mes services privés*.
 
 ## Routes
 
@@ -83,6 +93,18 @@ Si **ERR_NGROK_334** : le domaine est déjà actif ailleurs — choisis un **aut
 - **Position GPS** (obligatoire) — classifie les résultats du plus proche au plus loin
 
 Soumission `POST /screens/search` → liste des prestataires du métier (`liena-provider-results`) ou message « Pas de prestataires disponibles » → fiche prestataire → demande de service.
+
+## Netlify (site backend)
+
+| Variable | Rôle |
+|----------|------|
+| `PUBLIC_API_URL` / `APP_URL` | Même base que l’URL du service Yeria |
+| `YERIA_BASE_URL` | `https://yeria.app` |
+| `YERIA_APP_ID` / `YERIA_SERVICE_ID` | Console fournisseur |
+| `SERVICE_ED25519_PRIVATE_KEY` | PEM complet (obligatoire) |
+| `YERIA_DEV_KEY_ID` | Optionnel (tests appareil) |
+
+Ne pas compter sur `YERIA_SERVICE_PRIVATE_KEY_PATH` en prod (fichier absent).
 
 ## Vérification locale
 

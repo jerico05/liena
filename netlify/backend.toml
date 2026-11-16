@@ -11,6 +11,8 @@
 [build.environment]
   DATABASE_URL_UNPOOLED = "postgresql://build:build@127.0.0.1:5432/build"
   NODE_VERSION = "22"
+  # Sinon NODE_ENV=production (variables site) — npm omet les devDependencies (@types/*) et tsc échoue
+  NPM_CONFIG_PRODUCTION = "false"
 
 [functions]
   directory = "netlify/functions"
@@ -39,6 +41,12 @@
 
 [[redirects]]
   from = "/assets/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/v1"
   to = "/.netlify/functions/api"
   status = 200
   force = true
