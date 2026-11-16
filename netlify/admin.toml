@@ -3,7 +3,7 @@
 # Variable de build obligatoire : VITE_API_URL = https://VOTRE-SITE-BACKEND.netlify.app/api/v1
 
 [build]
-  command = "npm ci && npm run build:admin"
+  command = "npm ci --include=optional && npm run build:admin"
   publish = "apps/admin/dist"
 
 [build.environment]

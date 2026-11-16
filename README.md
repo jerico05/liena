@@ -22,7 +22,7 @@ npm run db:migrate:deploy
 npm run db:seed
 ```
 
-Dans `.env`, configure `ADMIN_USERNAME` et `ADMIN_PASSWORD` pour l’accès à la console. L’authentification admin est locale à l’application; Neon fournit la base de données, pas les identifiants d’administration.
+Variables séparées : **`apps/api/.env`** (base, Yeria, `ADMIN_USERNAME` / `ADMIN_PASSWORD`, CORS) et **`apps/admin/.env.local`** (`VITE_API_URL`). Voir [docs/deploy/env-par-site.md](./docs/deploy/env-par-site.md).
 
 Démarre l’API et l’admin dans deux terminaux :
 
@@ -36,7 +36,7 @@ npm run dev:admin     # http://localhost:5173
 
 Ouvre <http://localhost:5173> et connecte-toi avec `ADMIN_USERNAME` et `ADMIN_PASSWORD`. L’admin lit les prestataires et le tableau de bord depuis PostgreSQL (`DATABASE_URL`).
 
-`DATABASE_URL` est l’URL poolée utilisée par l’API. `DATABASE_URL_UNPOOLED` est l’URL directe pour Prisma Migrate et le seed. Ne commite jamais `.env`.
+`DATABASE_URL` est l’URL poolée utilisée par l’API. `DATABASE_URL_UNPOOLED` est l’URL directe pour Prisma Migrate et le seed. Ne commite jamais `apps/api/.env` ni `apps/admin/.env.local`.
 
 Avant toute migration distante, vérifie la branche Neon sélectionnée. Les migrations sont d’abord validées en développement; aucune migration de production n’est automatique.
 
@@ -49,7 +49,7 @@ Les **vues Yeria** sont dans `apps/mobile`, servies par `apps/api` sous **`GET/P
 ### Tester avec Yeria + ngrok (local)
 
 1. `npm run dev:api` (port 3000).
-2. Crée un domaine sur [ngrok Domains](https://dashboard.ngrok.com/domains), puis `NGROK_TUNNEL_URL=https://....` dans `.env`.
+2. Crée un domaine sur [ngrok Domains](https://dashboard.ngrok.com/domains), puis `NGROK_TUNNEL_URL=https://....` dans `apps/api/.env`.
 3. `npm run tunnel:ngrok -- -Force` (relance un tunnel propre sur ton compte).
 4. Copier la même URL dans `APP_URL` et `PUBLIC_API_URL`, et `TRUST_PROXY_HOPS=1`.
 4. Console fournisseur [Yeria](https://yeria.app/providers) : URL du service = cette URL ngrok ; écran d’entrée = `/screens/home`.

@@ -1,6 +1,6 @@
 # Netlify — 2 sites (admin + backend)
 
-Même dépôt Git, **deux projets Netlify**. Base de données : **Neon** ; dev local : `npm run dev:api` / `npm run dev:admin`.
+Même dépôt Git, **deux projets Netlify**. Base de données : **Neon** ; dev local : `npm run dev:api` / `npm run dev:admin`. Variables : [env-par-site.md](./env-par-site.md).
 
 ## Schéma
 
@@ -22,6 +22,8 @@ Même dépôt Git, **deux projets Netlify**. Base de données : **Neon** ; dev l
 | **Backend** | `netlify/backend.toml` | `apps/mobile` + `apps/api` + `db:generate` | `public/netlify-backend` + function |
 
 Dans chaque site Netlify : **Project configuration → Build & deploy → Build settings → Configuration file**.
+
+> **Piège** : sans fichier explicite, Netlify utilise le `netlify.toml` **à la racine** (= build **admin**). Le site backend doit avoir **`netlify/backend.toml`**, pas le fichier racine.
 
 ---
 

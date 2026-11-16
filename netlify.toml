@@ -1,12 +1,9 @@
-# Déploiement Netlify en 2 sites — voir netlify/admin.toml et netlify/backend.toml
-#
-# Site admin déjà existant : passer ce fichier à l’équivalent admin
-# (Build → Configuration file = netlify/admin.toml)
-#
-# Ce fichier racine = alias admin pour compatibilité (même contenu simplifié).
+# ⚠️ Site ADMIN uniquement. Pour l’API / Yeria : Configuration file = netlify/backend.toml
+# (sinon Netlify prend ce fichier par défaut et lance build:admin — pas l’API).
+# Voir docs/deploy/netlify-deux-sites.md
 
 [build]
-  command = "npm ci && npm run build:admin"
+  command = "npm ci --include=optional && npm run build:admin"
   publish = "apps/admin/dist"
 
 [build.environment]

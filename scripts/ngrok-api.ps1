@@ -34,7 +34,7 @@ if ($existing.Count -gt 0 -and -not $Force) {
   Write-Host "Interface : http://127.0.0.1:4040"
   Write-Host "Nouveau tunnel : arrete ngrok, puis"
   Write-Host "  npm run tunnel:ngrok -- -Url https://TON-DOMAINE.ngrok-free.dev -Force"
-  Write-Host "ou definis NGROK_TUNNEL_URL dans .env"
+  Write-Host "ou definis NGROK_TUNNEL_URL dans apps/api/.env"
   exit 0
 }
 
