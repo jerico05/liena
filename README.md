@@ -5,6 +5,8 @@ Liena est un monorepo pour l’API Express, la console d’administration et l�
 | App | État |
 |---|---|
 | `apps/api` | API Express (Yeria + `/api/v1`) |
+
+Déploiement recommandé : **Render** (API) + **Vercel** (admin) — [docs/deploy/render-vercel.md](docs/deploy/render-vercel.md). Netlify : [docs/deploy/netlify-deux-sites.md](docs/deploy/netlify-deux-sites.md).
 | `apps/mobile` | Vues Yeria (`@liena/mobile`, compilées dans l’API) |
 | `apps/admin` | Console React de supervision et modération des prestataires |
 | `prisma` | Modèle MVP PostgreSQL et migrations |

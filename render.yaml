@@ -1,0 +1,21 @@
+# Blueprint Render — backend Liena (Express, Yeria, Prisma / Neon)
+# https://render.com/docs/blueprint-spec
+#
+# Créer le service : Dashboard → New → Blueprint → ce dépôt.
+# Les secrets (DATABASE_URL, clés…) se définissent dans l’UI Render, pas ici.
+
+services:
+  - type: web
+    name: liena-api
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm install && npm run build:render
+    startCommand: npm run start --workspace @liena/api
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY_HOPS
+        value: "1"
