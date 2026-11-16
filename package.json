@@ -24,6 +24,7 @@
     "build:mobile": "npm run build --workspace @liena/mobile",
     "build:api": "npm run build --workspace @liena/api",
     "build:admin": "npm run build --workspace @liena/admin",
+    "build:netlify-backend": "npm install && npm run db:generate && npm run build:mobile && npm run build:api",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate:dev": "prisma migrate dev",
