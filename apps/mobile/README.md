@@ -13,7 +13,7 @@ Définitions des **vues Yeria** (SGUI) pour l’application Liena, alignées sur
 | 6 Devenir prestataire | FormView | `src/views/provider-onboarding.view.ts` |
 | 7 Gestion | ActionListView | `src/views/provider-manage.view.ts` |
 
-L’API signe et expose ces vues sous `/screens/*` (`backend/api/src/modules/yeria`).
+L’API signe et expose ces vues sous `/screens/*` (`apps/api/src/modules/yeria`).
 
 ```bash
 npm run build --workspace @liena/mobile

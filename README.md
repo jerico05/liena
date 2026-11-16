@@ -4,8 +4,8 @@ Liena est un monorepo pour l’API Express, la console d’administration et l�
 
 | App | État |
 |---|---|
-| `backend/api` | API Express (Yeria + `/api/v1`) |
-| `backend/mobile` | Vues Yeria (`@liena/mobile`, compilées dans l’API) |
+| `apps/api` | API Express (Yeria + `/api/v1`) |
+| `apps/mobile` | Vues Yeria (`@liena/mobile`, compilées dans l’API) |
 | `apps/admin` | Console React de supervision et modération des prestataires |
 | `prisma` | Modèle MVP PostgreSQL et migrations |
 
@@ -44,7 +44,7 @@ Avant toute migration distante, vérifie la branche Neon sélectionnée. Les mig
 
 L’API expose les catégories et profils actifs, ainsi que les routes de profil prestataire et de demandes client/prestataire. Les routes personnelles exigent un jeton Bearer Yeria; le `sub` vérifié sert d’identité et n’est jamais accepté depuis le corps de la requête.
 
-Les **vues Yeria** sont dans `backend/mobile`, servies par `backend/api` sous **`GET/POST /screens/*`**. Voir [backend/README.md](./backend/README.md). Déploiement : [docs/deploy/netlify-deux-sites.md](./docs/deploy/netlify-deux-sites.md).
+Les **vues Yeria** sont dans `apps/mobile`, servies par `apps/api` sous **`GET/POST /screens/*`**. Déploiement : [docs/deploy/netlify-deux-sites.md](./docs/deploy/netlify-deux-sites.md).
 
 ### Tester avec Yeria + ngrok (local)
 

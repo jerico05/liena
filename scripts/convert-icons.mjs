@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const assetsRoot = path.resolve(__dirname, "../backend/api/assets");
+const assetsRoot = path.resolve(__dirname, "../apps/api/assets");
 
 const TARGETS = [
   { dir: path.join(assetsRoot, "icons"), size: 96, density: 144 },

@@ -15,9 +15,9 @@
   node_bundler = "esbuild"
   external_node_modules = ["@prisma/client", "@prisma/adapter-pg", "pg", "sharp"]
   included_files = [
-    "backend/api/dist/**",
-    "backend/api/assets/**",
-    "backend/mobile/dist/**",
+    "apps/api/dist/**",
+    "apps/api/assets/**",
+    "apps/mobile/dist/**",
     "packages/**",
     "node_modules/.prisma/**",
     "node_modules/@prisma/**",

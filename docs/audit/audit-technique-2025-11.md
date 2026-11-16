@@ -18,8 +18,8 @@
 ## Architecture
 
 ```
-backend/api   → Express 5, Prisma, Yeria, admin JSON, Cloudinary
-backend/mobile → Vues Yeria (build → dist, pas de serveur)
+apps/api      → Express 5, Prisma, Yeria, admin JSON, Cloudinary
+apps/mobile   → Vues Yeria (build → dist, pas de serveur)
 apps/admin    → SPA Vite (Netlify publish)
 packages/shared-schemas → Zod, formulaires, géo
 prisma/       → PostgreSQL (Neon en prod)

@@ -9,9 +9,9 @@ let netlifyHandler:
 async function bootstrapHandler() {
   let createApp: () => import("express").Express;
   try {
-    ({ createApp } = await import("../../backend/api/dist/app.js"));
+    ({ createApp } = await import("../../apps/api/dist/app.js"));
   } catch {
-    ({ createApp } = await import("../../backend/api/src/app"));
+    ({ createApp } = await import("../../apps/api/src/app"));
   }
   return withLambda(serverless(createApp()));
 }

@@ -19,9 +19,7 @@ Même dépôt Git, **deux projets Netlify**. Base de données : **Neon** ; dev l
 | Site | Fichier config | Build | Publish |
 |------|----------------|-------|---------|
 | **Admin** | `netlify/admin.toml` | `npm run build:admin` | `apps/admin/dist` |
-| **Backend** | `netlify/backend.toml` | `backend/mobile` + `backend/api` + `db:generate` | `public/netlify-backend` + function |
-
-Arborescence : **`backend/api`** + **`backend/mobile`** (tu gères le déploiement du site backend).
+| **Backend** | `netlify/backend.toml` | `apps/mobile` + `apps/api` + `db:generate` | `public/netlify-backend` + function |
 
 Dans chaque site Netlify : **Project configuration → Build & deploy → Build settings → Configuration file**.
 

@@ -12,10 +12,8 @@ service_private.pem
 **/service_private.pem
 
 apps/admin/dist/
-backend/api/dist/
-backend/mobile/dist/
-apps/api/
-apps/mobile/
+apps/api/dist/
+apps/mobile/dist/
 
 # Outils / IDE (hors livrable)
 skills-lock.json
